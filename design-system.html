@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design System · Cellar &amp; Paper</title>
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/site.css">
+<style>body{padding:18px}</style>
+<style>
+  .ds h2.ds-h{ font-family:var(--font-display); font-weight:400; font-size:var(--fs-h2); line-height:1.05; margin:0 0 6px; }
+  .ds h2.ds-h small{ font-family:var(--font-serif-zh); font-size:.42em; color:var(--ink-faint); letter-spacing:.2em; margin-left:12px; vertical-align:middle; }
+  .ds section{ padding:48px 0 8px; border-top:1px solid var(--line); margin-top:48px; }
+  .ds .intro{ color:var(--ink-dim); max-width:62ch; margin:0 0 26px; font-size:13.5px; }
+  .sw-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(128px,1fr)); gap:12px; }
+  .sw{ border-radius:var(--r-card); overflow:hidden; border:1px solid var(--line-soft); background:var(--surface); }
+  .sw .chip-c{ height:96px; }
+  .sw .meta{ padding:10px 12px; font-size:11.5px; line-height:1.5; }
+  .sw .meta b{ display:block; font-weight:600; font-size:12.5px; }
+  .sw .meta code{ color:var(--ink-faint); font-size:11px; }
+  .type-row{ display:grid; grid-template-columns:160px 1fr; gap:20px; align-items:baseline; padding:18px 0; border-bottom:1px solid var(--line-soft); }
+  .type-row .jc-label{ color:var(--ink-faint); line-height:1.6; }
+  .demo-row{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:18px; }
+  .demo-box{ background:var(--paper-2); border-radius:var(--r-card); padding:24px; margin-bottom:14px; }
+  .demo-box.hero-bg{ background:var(--hero); color:var(--hero-ink); }
+  .rules{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+  .rule{ background:var(--surface); border:1px solid var(--line-soft); border-radius:var(--r-card); padding:18px 20px; font-size:13px; color:var(--ink-dim); }
+  .rule h3{ font-family:var(--font-display); font-weight:400; font-size:24px; color:var(--ink); margin:0 0 6px; }
+  .rule .do{ color:var(--cat-iw); font-weight:600; } .rule .dont{ color:var(--accent); font-weight:600; }
+  .space-row{ display:flex; align-items:flex-end; gap:14px; flex-wrap:wrap; }
+  .space-row > div > div{ background:var(--accent); opacity:.85; border-radius:2px; }
+  .space-row span{ display:block; font-size:10px; color:var(--ink-faint); margin-top:6px; text-align:center; }
+  @media (max-width:600px){ .type-row{ grid-template-columns:1fr; gap:6px; } }
+</style>
+<script>try{if(localStorage.getItem('jc-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
+</head>
+<body>
+<div class="wrap ds">
+  <div class="topbar">
+    <a class="brand" href="./"><svg class="brand-mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M9 4h14c0 8-2 13-7 13S9 12 9 4z"/><path d="M10 9h12"/><path d="M16 17v10"/><path d="M11 28h10"/></svg><span class="brand-name">Cellar <i>&amp;</i> Paper</span></a>
+    <div class="topbar-right"><a class="jc-btn" href="./">← 回到網站 Back to site</a><button class="jc-theme" type="button" id="theme-toggle" aria-label="切換夜間模式 Toggle dark mode"><svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button></div>
+  </div>
+
+  <header class="site" style="grid-template-columns:1fr;">
+    <div class="hero-text">
+      <p class="eyebrow"><span class="dot"></span>Design System · v1.0</p>
+      <h1><span class="en">Cellar &amp; <i>Paper</i></span><span class="zh">設計系統 Design System</span></h1>
+      <p class="lede">Cellar &amp; Paper 酒窖與紙張的設計系統：深酒紅外框、奶油色紙張、細長襯線大標題，搭配極小的大寫標籤與圓角膠囊按鈕。所有顏色和字型都寫在 <b>assets/tokens.css</b>，改一個地方，整個網站一起變。<span class="en">Oxblood frame, cream paper, condensed serif display, tiny tracked labels, pill buttons.</span></p>
+    </div>
+  </header>
+
+  <!-- COLOR -->
+  <section>
+    <h2 class="ds-h">Colour <small>色彩</small></h2>
+    <p class="intro">三層結構：最外面是酒紅外框（Frame），內容放在奶油紙張（Paper）上，重點區塊用波爾多紅卡片（Hero）。強調色只用玫瑰紅，不要再加其他亮色。</p>
+    <div class="sw-grid">
+      <div class="sw"><div class="chip-c" style="background:#4A0E13"></div><div class="meta"><b>Oxblood 外框</b><code>--frame · #4A0E13</code></div></div>
+      <div class="sw"><div class="chip-c" style="background:#842B30"></div><div class="meta"><b>Claret 主視覺</b><code>--hero · #842B30</code></div></div>
+      <div class="sw"><div class="chip-c" style="background:#A8343E"></div><div class="meta"><b>Rose 強調</b><code>--accent · #A8343E</code></div></div>
+      <div class="sw"><div class="chip-c" style="background:#F5EFE4"></div><div class="meta"><b>Cream 紙張</b><code>--paper · #F5EFE4</code></div></div>
+      <div class="sw"><div class="chip-c" style="background:#ECE3D2"></div><div class="meta"><b>Linen 次層</b><code>--paper-2 · #ECE3D2</code></div></div>
+      <div class="sw"><div class="chip-c" style="background:#E2CDA4"></div><div class="meta"><b>Sand 暖面板</b><code>--paper-warm · #E2CDA4</code></div></div>
+      <div class="sw"><div class="chip-c" style="background:#261718"></div><div class="meta"><b>Ink 文字</b><code>--ink · #261718</code></div></div>
+      <div class="sw"><div class="chip-c" style="background:#8E6B1F"></div><div class="meta"><b>Gold 標註</b><code>--gold · #8E6B1F</code></div></div>
+    </div>
+    <h3 class="jc-label" style="color:var(--ink-faint);margin:28px 0 12px;">葡萄分類色 Grape categories</h3>
+    <div class="sw-grid">
+      <div class="sw"><div class="chip-c" style="background:var(--cat-ib)"></div><div class="meta"><b>國際黑 Intl Black</b><code>--cat-ib · Claret</code></div></div>
+      <div class="sw"><div class="chip-c" style="background:var(--cat-rb)"></div><div class="meta"><b>地方黑 Regional Black</b><code>--cat-rb · Brick</code></div></div>
+      <div class="sw"><div class="chip-c" style="background:var(--cat-iw)"></div><div class="meta"><b>國際白 Intl White</b><code>--cat-iw · Vine</code></div></div>
+      <div class="sw"><div class="chip-c" style="background:var(--cat-rw)"></div><div class="meta"><b>地方白 Regional White</b><code>--cat-rw · Straw</code></div></div>
+    </div>
+  </section>
+
+  <!-- TYPE -->
+  <section>
+    <h2 class="ds-h">Typography <small>字體</small></h2>
+    <p class="intro">英文大標用 <b>Instrument Serif</b>（細長、優雅，斜體做重點）；中文標題用 <b>Noto Serif TC</b>；內文與標籤用 <b>Inter</b> 和 <b>Noto Sans TC</b>。標籤一律全大寫，字距拉寬。</p>
+    <div class="type-row"><span class="jc-label">Hero · 84px<br>Instrument Serif</span><span class="jc-display" style="font-size:var(--fs-hero)">Pinot <i>Noir</i></span></div>
+    <div class="type-row"><span class="jc-label">H1 · 54px<br>Instrument Serif</span><span class="jc-display" style="font-size:var(--fs-h1)">Heritage Harvest</span></div>
+    <div class="type-row"><span class="jc-label">中文標題 · 42px<br>Noto Serif TC 500</span><span style="font-family:var(--font-serif-zh);font-weight:500;font-size:40px;line-height:1.2">系統性品飲法</span></div>
+    <div class="type-row"><span class="jc-label">Card title · 30px</span><span class="grape-name">Cabernet Sauvignon</span></div>
+    <div class="type-row"><span class="jc-label">Body · 14.5px<br>Inter / Noto Sans TC</span><span style="max-width:60ch">晚熟品種，氣候不夠溫暖或年份不佳易有生青草本味（pyrazine）。Late-ripening — under-ripeness brings herbaceous, green pepper notes.</span></div>
+    <div class="type-row"><span class="jc-label">Label · 10.5px<br>tracking .16em</span><span class="jc-label">Explore our collections · 探索</span></div>
+  </section>
+
+  <!-- SPACE -->
+  <section>
+    <h2 class="ds-h">Space &amp; Shape <small>間距與形狀</small></h2>
+    <p class="intro">以 4px 為基礎。紙張圓角 6px、卡片 10px、按鈕和標籤全部是膠囊形（999px）。陰影很淡，只在滑過或展開時出現。</p>
+    <div class="space-row">
+      <div><div style="width:4px;height:4px"></div><span>4</span></div>
+      <div><div style="width:8px;height:8px"></div><span>8</span></div>
+      <div><div style="width:12px;height:12px"></div><span>12</span></div>
+      <div><div style="width:16px;height:16px"></div><span>16</span></div>
+      <div><div style="width:24px;height:24px"></div><span>24</span></div>
+      <div><div style="width:32px;height:32px"></div><span>32</span></div>
+      <div><div style="width:48px;height:48px"></div><span>48</span></div>
+      <div><div style="width:72px;height:72px"></div><span>72</span></div>
+    </div>
+  </section>
+
+  <!-- COMPONENTS -->
+  <section>
+    <h2 class="ds-h">Components <small>元件</small></h2>
+    <p class="intro">以下全部是網站上真正在用的元件，直接沿用同一份 CSS。</p>
+
+    <h3 class="jc-label" style="color:var(--ink-faint);margin:0 0 12px;">Buttons 按鈕</h3>
+    <div class="demo-box"><div class="demo-row">
+      <a class="jc-btn jc-btn--solid" href="#">Create your own</a>
+      <a class="jc-btn" href="#">Shop all categories</a>
+      <span class="lang-toggle"><button class="active">中 + EN</button><button>中文</button><button>EN</button></span>
+    </div></div>
+    <div class="demo-box hero-bg"><div class="demo-row hero-cta" style="justify-content:flex-start">
+      <a class="jc-btn" href="#">Add to notes</a><span class="jc-label" style="color:var(--hero-ink-dim)">在酒紅卡片上用淺色外框按鈕</span>
+    </div></div>
+
+    <h3 class="jc-label" style="color:var(--ink-faint);margin:26px 0 12px;">Chips &amp; search 篩選與搜尋</h3>
+    <div class="demo-box">
+      <div class="search-box" style="margin-bottom:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input type="text" placeholder="搜尋品種、產區… Search variety, region…"></div>
+      <div class="chip-row">
+        <button class="chip active">全部 All</button>
+        <button class="chip" data-cat="IB"><span class="sw"></span>國際黑 Intl Black</button>
+        <button class="chip active" data-cat="RB"><span class="sw"></span>地方黑 Regional Black</button>
+        <button class="chip" data-cat="IW"><span class="sw"></span>國際白 Intl White</button>
+        <button class="chip" data-cat="RW"><span class="sw"></span>地方白 Regional White</button>
+      </div>
+    </div>
+
+    <h3 class="jc-label" style="color:var(--ink-faint);margin:26px 0 12px;">Cards 卡片</h3>
+    <div id="grid" style="margin-top:0">
+      <div class="card"><div class="card-head"><span class="cat-badge" data-cat="IB"><span class="sw"></span>國際黑葡萄品種 International Black</span><div class="card-top"><span class="grape-name">Pinot Noir</span><span class="chev">+</span></div><div class="teaser">法國布根地（金丘 Côte d'Or 為聖地）· France, Burgundy</div></div></div>
+      <div class="card"><div class="card-head"><span class="cat-badge" data-cat="IW"><span class="sw"></span>國際白葡萄品種 International White</span><div class="card-top"><span class="grape-name">Sauvignon Blanc</span><span class="chev">+</span></div><div class="teaser">法國羅亞爾河谷 Sancerre · 紐西蘭 Marlborough</div></div></div>
+      <div class="card"><div class="card-head"><span class="cat-badge" data-cat="RW"><span class="sw"></span>地方白葡萄品種 Regional White</span><div class="card-top"><span class="grape-name">Assyrtiko</span><span class="chev">+</span></div><div class="teaser">希臘 Santorini，高酸、礦物感 · Greece, Santorini</div></div></div>
+    </div>
+
+    <h3 class="jc-label" style="color:var(--ink-faint);margin:26px 0 12px;">Note block 筆記區塊</h3>
+    <div class="nblock">
+      <div class="field-label"><span class="zh">生長環境</span><span class="en">Growing environment</span></div>
+      <ul class="bullets"><li><span class="bullet-tag">氣候</span>溫和海洋性氣候，<mark class="kp">開花結果</mark>期易受降雨影響</li><li>左岸礫石土壤排水佳、吸熱</li></ul>
+    </div>
+    <div class="exam-card">
+      <div class="exam-head-top"><span class="section-tag">Climate &amp; Geography</span><span class="exam-marks">6 分 marks</span></div>
+      <h2 class="exam-q-title">Q1. Tuscany 托斯卡尼氣候分區<span class="en">Tuscany: Climatic Zones</span></h2>
+      <details class="exam-answer"><summary>顯示答案 Show answer</summary><div class="exam-answer-body"><div class="exam-tips"><span class="tip-label">Tip · 答題提示</span>先寫地形，再寫調節因素。</div></div></details>
+    </div>
+  </section>
+
+  <!-- RULES -->
+  <section>
+    <h2 class="ds-h">Principles <small>使用原則</small></h2>
+    <div class="rules">
+      <div class="rule"><h3>One accent</h3><span class="do">✓</span> 一個畫面只用一個玫瑰紅重點。<br><span class="dont">✕</span> 不要再加藍、綠等亮色按鈕。</div>
+      <div class="rule"><h3>Big &amp; tiny</h3><span class="do">✓</span> 大標題很大、標籤很小，中間少用中等字級。<br><span class="dont">✕</span> 不要用粗體英文大標。</div>
+      <div class="rule"><h3>Italic for emphasis</h3><span class="do">✓</span> 英文標題的重點字用斜體，例如 The Grape <i>Atlas</i>。<br><span class="dont">✕</span> 中文不要用斜體。</div>
+      <div class="rule"><h3>Paper first</h3><span class="do">✓</span> 長篇閱讀內容放奶油紙上。<br><span class="dont">✕</span> 酒紅底只用於主視覺，不放長文。</div>
+    </div>
+  </section>
+
+  <footer class="site">
+    <div class="foot-brand">Cellar <i>&amp;</i> Paper</div>
+    <div>Design System v1.0 · tokens: assets/tokens.css · site styles: assets/site.css</div>
+  </footer>
+</div>
+<script>(function(){var b=document.getElementById('theme-toggle');if(!b)return;b.addEventListener('click',function(){var r=document.documentElement,d=r.getAttribute('data-theme')==='dark';if(d)r.removeAttribute('data-theme');else r.setAttribute('data-theme','dark');try{localStorage.setItem('jc-theme',d?'light':'dark');}catch(e){}});})();</script>
+</body>
+</html>

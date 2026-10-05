@@ -1,0 +1,103 @@
+/* ==========================================================
+   Cellar & Paper 酒窖與紙張 — Design System Tokens  v1.0
+   酒窖紙本風格：深酒紅外框 + 奶油紙張 + 細長襯線字
+   ========================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@400;500;600&display=swap');
+
+:root{
+  /* ---- Raw palette 原色 ---- */
+  --jc-oxblood:   #4A0E13;  /* 外框、最深底色 */
+  --jc-claret:    #842B30;  /* 主視覺卡片 */
+  --jc-claret-dk: #6A1F24;
+  --jc-rose:      #A8343E;  /* 強調文字、連結 */
+  --jc-cream:     #F5EFE4;  /* 紙張 */
+  --jc-linen:     #ECE3D2;  /* 次層紙張 */
+  --jc-sand:      #E2CDA4;  /* 暖色面板 */
+  --jc-vine:      #46552F;  /* 葡萄藤綠 */
+  --jc-brick:     #A65530;  /* 磚紅 */
+  --jc-straw:     #A98428;  /* 麥稈金 */
+  --jc-ink:       #261718;  /* 主文字 */
+  --jc-ink-2:     #5C4A47;
+  --jc-ink-3:     #8C7A74;
+
+  /* ---- Semantic 語意色 ---- */
+  --frame:        var(--jc-oxblood);
+  --paper:        var(--jc-cream);
+  --surface:      #FBF8F2;  /* 卡片 */
+  --paper-2:      var(--jc-linen);
+  --paper-warm:   var(--jc-sand);
+  --hero:         var(--jc-claret);
+  --hero-ink:     #F7EDE4;
+  --hero-ink-dim: #E3C7BF;
+  --hero-line:    rgba(247,237,228,.28);
+  --ink:          var(--jc-ink);
+  --ink-dim:      var(--jc-ink-2);
+  --ink-faint:    var(--jc-ink-3);
+  --line:         #D9CDB9;
+  --line-soft:    #E6DCCB;
+  --accent:       var(--jc-rose);
+  --accent-ink:   #FFF8F2;
+  --accent-soft:  #F1DCD8;
+  --gold:         #8E6B1F;
+  --gold-soft:    #EEE0BF;
+  --focus:        #2F6B74;
+
+  /* 葡萄分類色 Grape categories */
+  --cat-ib: var(--jc-claret);   /* 國際黑 */
+  --cat-rb: var(--jc-brick);    /* 地方黑 */
+  --cat-iw: var(--jc-vine);     /* 國際白 */
+  --cat-rw: var(--jc-straw);    /* 地方白 */
+
+  /* ---- Typography 字體 ---- */
+  --font-display: "Instrument Serif", "Noto Serif TC", Georgia, serif;
+  --font-serif-zh:"Noto Serif TC", "Instrument Serif", serif;
+  --font-body:    "Inter", "Noto Sans TC", system-ui, sans-serif;
+
+  --fs-hero:  clamp(44px, 6.4vw, 84px);
+  --fs-h1:    clamp(34px, 4.4vw, 54px);
+  --fs-h2:    clamp(28px, 3.2vw, 40px);
+  --fs-h3:    24px;
+  --fs-body:  14.5px;
+  --fs-small: 12.5px;
+  --fs-label: 10.5px;
+  --track-label: .16em;
+
+  /* ---- Space / shape 間距與形狀 ---- */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px; --sp-8:72px;
+  --r-sheet: 6px;
+  --r-card:  10px;
+  --r-pill:  999px;
+  --shadow:  0 1px 0 rgba(38,23,24,.04), 0 10px 30px -18px rgba(38,23,24,.35);
+  --ease: cubic-bezier(.2,.7,.2,1);
+}
+
+/* ---- Dark 夜間模式（手動切換，預設一律淺色紙張）----
+   以中性炭灰為底，降低紅棕色調，文字對比提高到 AA 以上 */
+:root[data-theme="dark"]{
+  --frame:#0F0D0C; --paper:#1A1817; --surface:#24211F; --paper-2:#2A2624; --paper-warm:#2F2A22;
+  --hero:#6B2328; --hero-ink:#FAF3EC; --hero-ink-dim:#E6CFC8; --hero-line:rgba(250,243,236,.25);
+  --ink:#F1EBE4; --ink-dim:#CFC6BD; --ink-faint:#A39A91;
+  --line:#3D3835; --line-soft:#322E2B;
+  --accent:#F0A1A8; --accent-ink:#2A0F12; --accent-soft:#3E2A2C;
+  --gold:#E8CB8A; --gold-soft:#3A3122; --focus:#8FD3DD;
+  --cat-ib:#F0A1A8; --cat-rb:#EDB08F; --cat-iw:#B7CB95; --cat-rw:#E8CB8A;
+  --shadow:0 1px 0 rgba(0,0,0,.25), 0 14px 34px -18px rgba(0,0,0,.75);
+  color-scheme:dark;
+}
+:root{ color-scheme:light; }
+
+/* ---- Core primitives 基礎元件（可在任何頁面重複使用）---- */
+.jc-label{ font-family:var(--font-body); font-size:var(--fs-label); font-weight:500; letter-spacing:var(--track-label); text-transform:uppercase; }
+.jc-display{ font-family:var(--font-display); font-weight:400; line-height:1.02; letter-spacing:-.005em; }
+.jc-btn{ display:inline-flex; align-items:center; gap:8px; font:500 10.5px/1 var(--font-body); letter-spacing:.14em; text-transform:uppercase; padding:12px 22px; border-radius:var(--r-pill); border:1px solid currentColor; background:transparent; color:inherit; cursor:pointer; text-decoration:none; transition:background .2s var(--ease), color .2s var(--ease); }
+.jc-btn--solid{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+.jc-btn:hover{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+.jc-btn--solid:hover{ background:var(--accent); border-color:var(--accent); }
+
+/* Theme toggle 夜間切換鈕 */
+.jc-theme{ width:36px; height:36px; border-radius:50%; border:1px solid var(--line); background:transparent; color:var(--ink); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition:background .2s, color .2s; }
+.jc-theme:hover{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+.jc-theme svg{ width:16px; height:16px; }
+.jc-theme .sun{ display:none; }
+:root[data-theme="dark"] .jc-theme .sun{ display:block; }
+:root[data-theme="dark"] .jc-theme .moon{ display:none; }
