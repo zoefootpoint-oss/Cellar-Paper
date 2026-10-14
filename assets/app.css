@@ -538,3 +538,45 @@ body[data-lang="en"] .lq-en{ font-size:1em; color:var(--ink); margin-top:0; }
 .lead-quote .lq-zh{ font-family:var(--font-serif-zh); font-style:normal; font-size:.8em; line-height:1.6; display:block; }
 .see-also .shelf{ background:none; grid-auto-rows:auto; }
 .see-also .slot, .kept-shelf .slot{ height:auto; padding-bottom:14px; border-bottom:3px solid var(--wood); }
+
+/* ---- Rack filters & Variety Quadrant Map (The Racks) ---- */
+.rk-tag-row{ display:flex; flex-wrap:wrap; gap:10px 20px; padding:4px 0 2px; }
+.rk-tag-group{ display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+.rk-tag-group-label{ font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); margin-right:2px; }
+.rk-tagbtn{
+  font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; font-weight:500;
+  padding:7px 13px; border-radius:var(--r-pill); border:1px solid var(--line);
+  background:transparent; color:var(--ink-dim); cursor:pointer; line-height:1.2;
+  transition:all .2s var(--ease);
+}
+.rk-tagbtn:hover{ border-color:var(--ink); color:var(--ink); }
+.rk-tagbtn.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+.rk-reset-btn{ font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; padding:7px 13px; border-radius:var(--r-pill); border:1px dashed var(--ink-faint); background:transparent; color:var(--ink-dim); cursor:pointer; }
+.rk-reset-btn:hover{ border-color:var(--ink); color:var(--ink); }
+
+.rk-quad{ border:1px solid var(--line); border-radius:var(--r-card); margin:18px 0 8px; overflow:hidden; background:var(--surface); }
+.rk-quad-head{ width:100%; display:flex; align-items:center; gap:10px; padding:14px 18px; background:none; border:none; cursor:pointer; text-align:left; font-family:var(--font-display); }
+.rk-quad-head .zh{ font-size:15px; }
+.rk-quad-head .en{ font-size:12px; font-style:italic; color:var(--ink-faint); font-family:var(--font-body); }
+.rk-quad-chev{ margin-left:auto; color:var(--ink-faint); transition:transform .15s var(--ease); }
+.rk-quad-head[aria-expanded="false"] .rk-quad-chev{ transform:rotate(-90deg); }
+.rk-quad-body{ padding:4px 18px 18px; }
+.rk-quad-body[hidden]{ display:none; }
+.rk-quad-toggle{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:12px; }
+.rk-quad-toggle-label{ font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); margin-right:2px; }
+.rk-quadbtn{ font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; padding:7px 13px; border-radius:var(--r-pill); border:1px solid var(--line); background:transparent; color:var(--ink-dim); cursor:pointer; }
+.rk-quadbtn:hover{ border-color:var(--ink); color:var(--ink); }
+.rk-quadbtn.active{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+.rk-quad-chart{ width:100%; overflow-x:auto; }
+.rk-quad-chart svg{ width:100%; height:auto; display:block; }
+.rk-quad-dot{ cursor:pointer; }
+.rk-quad-dot:hover{ stroke-width:2.6; }
+.rk-quad-axis-label{ font-size:11px; fill:var(--ink-dim); font-family:var(--font-body); }
+.rk-quad-grid-line{ stroke:var(--line); stroke-width:1; }
+.rk-quad-axis-line{ stroke:var(--ink-faint); stroke-width:1.4; }
+.rk-quad-legend{ display:flex; flex-wrap:wrap; gap:7px 16px; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
+.rk-quad-legend-item{ display:flex; align-items:center; gap:5px; font-size:11px; color:var(--ink-dim); }
+.rk-quad-legend-sw{ width:10px; height:10px; border-radius:50%; display:inline-block; flex:none; }
+.rk-quad-legend-shape{ font-size:11px; color:var(--ink-faint); }
+.rk-quad-hint{ font-size:10.5px; color:var(--ink-faint); margin-top:8px; }
+:root[data-theme="dark"] .rk-quad{ background:var(--surface); }

@@ -41,6 +41,20 @@ const CATS = {
   RW:{ n:'IV',  zh:'地方白', en:'Regional White',      glass:'#B08A35', cap:'#842B30', hero:'#7A5C1C' }
 };
 const CAT_ORDER = ['IB','RB','IW','RW'];
+
+/* ---------- rack filter tags & quadrant map ---------- */
+const COUNTRY_COLORS = {
+  'France': '#B5384A', 'Italy': '#2F8F5B', 'Spain': '#D98B2B', 'Portugal': '#6A4C93',
+  'Germany': '#1C7293', 'Austria': '#B08900', 'Greece': '#3465A4', 'Hungary': '#8C6D46',
+  'USA': '#C2255C', 'Argentina': '#D4692B', 'Chile': '#3FA7A1', 'South Africa': '#7A5230'
+};
+const QUAD_METRICS = {
+  ripen: { zh:'熟成期', en:'Ripening', lowZh:'早熟', lowEn:'Early', highZh:'晚熟', highEn:'Late' },
+  body:  { zh:'酒體', en:'Body', lowZh:'輕', lowEn:'Light', highZh:'飽滿', highEn:'Full' },
+  acid:  { zh:'酸度', en:'Acidity', lowZh:'低', lowEn:'Low', highZh:'高', highEn:'High' }
+};
+const RIPEN_TAG_NUM = {'ripen-early':1,'ripen-mid':2,'ripen-late':3};
+const TEMP_TAG_NUM = {'temp-cool':1,'temp-moderate':2,'temp-warm':3,'temp-hot':4};
 const counters = {};
 GRAPES.forEach(g => {
   counters[g.catCode] = (counters[g.catCode]||0) + 1;
@@ -231,7 +245,54 @@ function pageHome(){
 }
 
 /* ---------- The Racks ---------- */
-const RS = { q:'', cat:'ALL', view: S.prefs.rackView || 'rack' };
+const RS = { q:'', cat:'ALL', view: S.prefs.rackView || 'rack', tags:[], quadMetric:'ripen' };
+const RK_TAG_DEFS = [
+  { labelZh:'熟成期', labelEn:'Ripening', tags:[['ripen-early','早熟 Early'],['ripen-mid','中熟 Mid'],['ripen-late','晚熟 Late']] },
+  { labelZh:'氣候冷熱', labelEn:'Temperature', tags:[['temp-cool','涼爽 Cool'],['temp-moderate','溫和 Moderate'],['temp-warm','溫暖 Warm'],['temp-hot','炎熱 Hot']] },
+  { labelZh:'氣候類型', labelEn:'Climate Type', tags:[['climate-maritime','海洋性 Maritime'],['climate-continental','大陸型 Continental'],['climate-mediterranean','地中海型 Mediterranean']] }
+];
+function rkTagRowHTML(){
+  return '<div class="rk-tag-row" id="rack-tags">' + RK_TAG_DEFS.map(grp =>
+    '<div class="rk-tag-group"><span class="rk-tag-group-label">'+esc(grp.labelZh)+' '+esc(grp.labelEn)+'</span>' +
+      grp.tags.map(t => '<button class="rk-tagbtn'+(RS.tags.includes(t[0])?' active':'')+'" data-tag="'+t[0]+'" type="button">'+esc(t[1])+'</button>').join('') +
+    '</div>').join('') +
+    '<button class="rk-reset-btn" id="rack-tags-reset" type="button"'+(RS.tags.length?'':' hidden')+'>清除標籤 Clear tags</button>' +
+  '</div>';
+}
+function rkQuadSVG(metric){
+  const m = QUAD_METRICS[metric];
+  const W = 900, H = 520, L = 60, R = 20, T = 18, B = 50;
+  const PW = W - L - R, PH = H - T - B, yMax = 3;
+  function hash(n, salt){ const x = Math.sin(n * 12.9898 + salt * 78.233) * 43758.5453; return x - Math.floor(x); }
+  function px(xVal, seed){ const jx = (hash(seed,1)-0.5)*0.6; const v = Math.max(1, Math.min(4, xVal+jx)); return L + (v-1)/3*PW; }
+  function py(yVal, seed){ const jy = (hash(seed,2)-0.5)*0.6; const v = Math.max(1, Math.min(yMax, yVal+jy)); return T + PH - (v-1)/(yMax-1)*PH; }
+  let gridLines = '';
+  for(let gx=1; gx<=4; gx++){ const x = L+(gx-1)/3*PW; gridLines += '<line class="rk-quad-grid-line" x1="'+x+'" y1="'+T+'" x2="'+x+'" y2="'+(T+PH)+'"/>'; }
+  for(let gy=1; gy<=3; gy++){ const y = T+PH-(gy-1)/2*PH; gridLines += '<line class="rk-quad-grid-line" x1="'+L+'" y1="'+y+'" x2="'+(L+PW)+'" y2="'+y+'"/>'; }
+  const dots = GRAPES.map(g => {
+    const v = g.viz; if(!v) return '';
+    const cx = px(v.temp, g.id), cy = py(v[metric], g.id+1000);
+    const color = COUNTRY_COLORS[v.country] || 'var(--ink)';
+    const isWhite = g.class === 'white';
+    const fill = isWhite ? 'var(--surface)' : color;
+    const sw = isWhite ? 2.2 : 1.2;
+    return '<circle class="rk-quad-dot" data-id="'+g.id+'" cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="6" fill="'+fill+'" stroke="'+color+'" stroke-width="'+sw+'" opacity="0.88"><title>'+esc(g.main)+' ('+esc(v.country)+') — '+esc(g.catZh)+'</title></circle>';
+  }).join('');
+  return '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">' + gridLines +
+    '<line class="rk-quad-axis-line" x1="'+L+'" y1="'+T+'" x2="'+L+'" y2="'+(T+PH)+'"/>' +
+    '<line class="rk-quad-axis-line" x1="'+L+'" y1="'+(T+PH)+'" x2="'+(L+PW)+'" y2="'+(T+PH)+'"/>' + dots +
+    '<text class="rk-quad-axis-label" x="'+L+'" y="'+(T+PH+20)+'">涼爽 Cool</text>' +
+    '<text class="rk-quad-axis-label" x="'+(L+PW)+'" y="'+(T+PH+20)+'" text-anchor="end">炎熱 Hot</text>' +
+    '<text class="rk-quad-axis-label" x="'+(L+PW/2)+'" y="'+(T+PH+38)+'" text-anchor="middle">氣候冷熱 Climate Temperature →</text>' +
+    '<text class="rk-quad-axis-label" x="'+(L-8)+'" y="'+(T+PH)+'" text-anchor="end">'+esc(m.lowZh)+' '+esc(m.lowEn)+'</text>' +
+    '<text class="rk-quad-axis-label" x="'+(L-8)+'" y="'+(T+10)+'" text-anchor="end">'+esc(m.highZh)+' '+esc(m.highEn)+'</text>' +
+    '<text class="rk-quad-axis-label" x="14" y="'+(T+PH/2)+'" text-anchor="middle" transform="rotate(-90 14 '+(T+PH/2)+')">'+esc(m.zh)+' '+esc(m.en)+' ↑</text>' +
+  '</svg>';
+}
+function rkQuadLegendHTML(){
+  return Object.keys(COUNTRY_COLORS).map(c => '<span class="rk-quad-legend-item"><span class="rk-quad-legend-sw" style="background:'+COUNTRY_COLORS[c]+'"></span>'+esc(c)+'</span>').join('') +
+    '<span class="rk-quad-legend-shape">● 實心=黑葡萄 Filled = black grape</span><span class="rk-quad-legend-shape">◎ 空心=白葡萄 Ring = white grape</span>';
+}
 function pageRacks(){
   const counts = CAT_ORDER.map(c => [GRAPES.filter(g => g.catCode===c).length, 'Rack '+CATS[c].n]);
   PAGE.innerHTML = folio('cellar','01','The <i>Racks</i>','酒架',
@@ -241,12 +302,56 @@ function pageRacks(){
     '<div class="search-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="rack-q" type="text" placeholder="找一瓶：品種、產區、風味… Find a bottle" value="'+esc(RS.q)+'" autocomplete="off"></div>' +
     '<div class="chip-row" id="rack-cats">' + ['ALL'].concat(CAT_ORDER).map(c => '<button class="chip'+(RS.cat===c?' active':'')+'" data-cat="'+c+'" type="button">'+(c==='ALL'?'全部 All':'<span class="sw"></span>'+CATS[c].n+' '+CATS[c].zh)+'</button>').join('') + '</div>' +
     '<div class="seg" id="rack-view"><button type="button" data-v="rack" class="'+(RS.view==='rack'?'on':'')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3h2v4l2 3v11H7V10l2-3zM15 3h2v4l2 3v11h-6"/></svg>Rack</button><button type="button" data-v="list" class="'+(RS.view==='list'?'on':'')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>List</button></div>' +
-  '</div></div><div class="cp-container" id="rack-body"></div>';
+  '</div><div class="cp-container">' + rkTagRowHTML() + '</div></div>' +
+  '<div class="cp-container"><div class="rk-quad" id="rack-quad">' +
+    '<button type="button" class="rk-quad-head" id="rack-quad-toggle-btn" aria-expanded="true"><span class="zh">品種象限圖</span> <span class="en">Variety Quadrant Map</span>' +
+      '<svg class="rk-quad-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>' +
+    '<div class="rk-quad-body" id="rack-quad-body">' +
+      '<div class="rk-quad-toggle" id="rack-quad-metric"><span class="rk-quad-toggle-label">縱軸 Y axis:</span>' +
+        Object.keys(QUAD_METRICS).map(k => '<button class="rk-quadbtn'+(RS.quadMetric===k?' active':'')+'" data-metric="'+k+'" type="button">'+esc(QUAD_METRICS[k].zh)+' '+esc(QUAD_METRICS[k].en)+'</button>').join('') +
+      '</div>' +
+      '<div class="rk-quad-chart" id="rack-quad-chart"></div>' +
+      '<div class="rk-quad-legend" id="rack-quad-legend"></div>' +
+      '<div class="rk-quad-hint">點一個點 → 打開那支品種的頁面。Click a dot to open that variety\'s page.</div>' +
+    '</div>' +
+  '</div></div>' +
+  '<div class="cp-container" id="rack-body"></div>';
   const body = $('#rack-body');
+
+  function drawQuad(){
+    $('#rack-quad-chart').innerHTML = rkQuadSVG(RS.quadMetric);
+    $('#rack-quad-legend').innerHTML = rkQuadLegendHTML();
+  }
+  $('#rack-quad-metric').addEventListener('click', e => {
+    const b = e.target.closest('.rk-quadbtn'); if(!b) return;
+    $$('#rack-quad-metric .rk-quadbtn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active'); RS.quadMetric = b.dataset.metric; drawQuad();
+  });
+  $('#rack-quad-chart').addEventListener('click', e => {
+    const dot = e.target.closest('.rk-quad-dot'); if(!dot) return;
+    location.hash = '#/racks/' + dot.dataset.id;
+  });
+  $('#rack-quad-toggle-btn').addEventListener('click', () => {
+    const btn = $('#rack-quad-toggle-btn'); const expanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!expanded)); $('#rack-quad-body').hidden = expanded;
+  });
+  drawQuad();
+
+  $('#rack-tags').addEventListener('click', e => {
+    const resetBtn = e.target.closest('#rack-tags-reset');
+    if(resetBtn){ RS.tags = []; $('#rack-tags').outerHTML = rkTagRowHTML(); draw(); return; }
+    const b = e.target.closest('.rk-tagbtn'); if(!b) return;
+    const tag = b.dataset.tag; const idx = RS.tags.indexOf(tag);
+    if(idx === -1) RS.tags.push(tag); else RS.tags.splice(idx, 1);
+    b.classList.toggle('active'); $('#rack-tags-reset').hidden = !RS.tags.length;
+    draw();
+  });
+
   function draw(){
     const q = RS.q.toLowerCase();
-    const list = GRAPES.filter(g => (RS.cat==='ALL' || g.catCode===RS.cat) && (!q || g.hay.includes(q)));
-    if(!list.length){ body.innerHTML = '<div class="empty show" style="margin:40px 0 80px"><div class="big">這座酒架上沒有找到</div><div>試試別的關鍵字。Nothing on the racks matches.</div></div>'; return; }
+    const list = GRAPES.filter(g => (RS.cat==='ALL' || g.catCode===RS.cat) && (!q || g.hay.includes(q)) &&
+      (!RS.tags.length || RS.tags.every(t => (g.tags||[]).includes(t))));
+    if(!list.length){ body.innerHTML = '<div class="empty show" style="margin:40px 0 80px"><div class="big">這座酒架上沒有找到</div><div>試試別的關鍵字或清除標籤。Nothing matches — try different keywords or clear the tag filters.</div></div>'; return; }
     if(RS.view === 'list'){
       body.innerHTML = '<table class="cat-list"><thead><tr><th>Rack</th><th>Bottle</th><th class="hide-sm">Key places · 主要產地</th><th class="hide-sm">Price · 價格</th></tr></thead><tbody>' +
         list.slice().sort((a,b)=>a.main.localeCompare(b.main)).map(g => '<tr data-id="'+g.id+'"><td><span class="dot" style="background:var(--cat-'+g.catCode.toLowerCase()+')"></span>'+CATS[g.catCode].n+'·'+pad(g.no)+'</td><td class="nm">'+esc(g.name)+'</td><td class="hide-sm">'+esc(g.f(1).en.slice(0,3).map(shortRegion).join(' · '))+'</td><td class="hide-sm">'+esc((g.f(7).zh[0]||'').slice(0,40))+'</td></tr>').join('') + '</tbody></table><div style="height:80px"></div>';
