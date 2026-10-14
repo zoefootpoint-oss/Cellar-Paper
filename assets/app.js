@@ -49,9 +49,31 @@ const COUNTRY_COLORS = {
   'USA': '#C2255C', 'Argentina': '#D4692B', 'Chile': '#3FA7A1', 'South Africa': '#7A5230'
 };
 const QUAD_METRICS = {
-  ripen: { zh:'熟成期', en:'Ripening', lowZh:'早熟', lowEn:'Early', highZh:'晚熟', highEn:'Late' },
-  body:  { zh:'酒體', en:'Body', lowZh:'輕', lowEn:'Light', highZh:'飽滿', highEn:'Full' },
-  acid:  { zh:'酸度', en:'Acidity', lowZh:'低', lowEn:'Low', highZh:'高', highEn:'High' }
+  ripen:     { zh:'熟成期', en:'Ripening', lowZh:'早熟', lowEn:'Early', highZh:'晚熟', highEn:'Late' },
+  body:      { zh:'酒體', en:'Body', lowZh:'輕', lowEn:'Light', highZh:'飽滿', highEn:'Full' },
+  acid:      { zh:'酸度', en:'Acidity', lowZh:'低', lowEn:'Low', highZh:'高', highEn:'High' },
+  tannin:    { zh:'單寧', en:'Tannin', lowZh:'低', lowEn:'Low', highZh:'高', highEn:'High' },
+  sweetness: { zh:'甜度', en:'Sweetness', lowZh:'通常全乾', lowEn:'Typically dry', highZh:'經典甜型品種', highEn:'Classic sweet-style' }
+};
+// Tannin & sweetness aren't in the grape-data JSON's viz block (unlike ripen/body/acid), and
+// unlike those three, they're not safely derivable by scanning the free-text fields for adjectives
+// — "soft/round/fine" describes tannin TEXTURE, not quantity, and a naive keyword scan mis-scores
+// exactly the grapes (Merlot, Malbec, Tinta Barroca…) where that distinction matters most. So these
+// are hand-set from standard WSET L3 characteristics instead, keyed by grape id (see the id list in
+// grape-data). Tannin — white grapes default to a flat low baseline (negligible skin contact, and
+// nothing in this dataset's text ever discusses white-grape tannin); black grapes are listed below.
+const TANNIN_BY_ID = {
+  0:3, 1:2, 2:1, 3:2.5, 4:2, 5:1.5, 6:2.5, 7:3, 8:3, 9:2, 10:2.5, 11:3, 12:3, 13:3, 14:1, 15:1.5,
+  16:2.5, 17:2.5, 18:2.5, 19:3, 20:2.5, 21:1.5, 22:3, 23:2.5, 24:3, 25:2, 26:3, 27:2, 28:2, 29:3,
+  30:3, 31:1.5, 32:1.5, 33:2.5, 34:2, 35:2, 36:3, 37:1.5, 38:1, 39:2.5
+};
+// Sweetness here means "how associated is this grape with an off-dry/sweet style in the syllabus",
+// not a property of any one bottle — most L3 grapes are overwhelmingly vinified dry (1); a handful
+// are hallmark sweet-wine grapes (3 — Tokaji, Sauternes, PX, Moscato…) or notably also made
+// off-dry/sweet alongside dry (2 — e.g. the Port grapes, Banyuls/Maury Grenache). Anything not
+// listed defaults to 1 (typically dry).
+const SWEETNESS_BY_ID = {
+  5:2, 19:2, 20:2, 21:2, 42:3, 44:2, 45:3, 46:3, 48:3, 49:3, 58:2, 63:2, 65:2, 66:3, 68:2, 70:1.5, 72:3
 };
 const RIPEN_TAG_NUM = {'ripen-early':1,'ripen-mid':2,'ripen-late':3};
 const TEMP_TAG_NUM = {'temp-cool':1,'temp-moderate':2,'temp-warm':3,'temp-hot':4};
@@ -64,6 +86,10 @@ GRAPES.forEach(g => {
   g.main = parts[0]; g.aka = parts.slice(1);
   g.f = n => g.fields.find(x => x.num === n) || { zh:[], en:[] };
   g.hay = (g.name + ' ' + g.catZh + ' ' + g.catEn + ' ' + g.fields.map(f => f.zh.join(' ') + ' ' + f.en.join(' ')).join(' ')).toLowerCase();
+  if(g.viz){
+    g.viz.tannin = g.class==='white' ? 1 : (TANNIN_BY_ID[g.id] ?? 2);
+    g.viz.sweetness = SWEETNESS_BY_ID[g.id] ?? 1;
+  }
 });
 const byId = id => GRAPES.find(g => String(g.id) === String(id));
 
@@ -279,11 +305,11 @@ function pageHome(){
   const pct = Math.round(S.read.length / CHAPTERS.length * 100);
   PAGE.innerHTML =
   '<section class="door-hero"><div class="cp-container"><div>' +
-    '<p class="eyebrow"><span class="dot"></span>A wine reading house &middot; WSET Level 3</p>' +
+    '<p class="eyebrow"><span class="dot"></span>A cozy little wine library</p>' +
     '<h1>Cellar <i>&amp;</i><br>Paper</h1>' +
     '<p class="zh">酒窖與紙張</p>' +
-    '<p class="tag">Where wine is kept, and written.</p>' +
-    '<p class="tag-zh">收藏酒，也收藏字。</p>' +
+    '<p class="tag">Keeping the wine, and the knowledge.</p>' +
+    '<p class="tag-zh">收藏酒，也收藏知識。</p>' +
     '<div class="hero-cta"><a class="jc-btn" href="#/racks">走進酒架 Enter the racks</a><a class="jc-btn" href="#/manuscripts">翻開手稿 Open manuscripts</a></div>' +
   '</div><div class="art"><span class="art-ring"></span>'+GRAPE_ART+'</div></div></section>' +
 
@@ -315,11 +341,11 @@ function pageHome(){
         '<a class="item" href="#/my"><span class="n">iii.</span><span class="t">My Cellar<small>我的酒窖 · 收藏與進度</small></span><span class="c">'+S.kept.length+' kept</span></a>' +
       '</div>' +
       '<div class="side p"><div class="head"><h3>Paper</h3><span>紙張</span></div><p class="lead">閱讀與書寫：課程手稿、風土地圖、答題綱要。</p>' +
-        '<a class="item" href="#/manuscripts"><span class="n">i.</span><span class="t">Manuscripts<small>手稿 · WSET L3 課程筆記</small></span><span class="c">45 ch.</span></a>' +
+        '<a class="item" href="#/manuscripts"><span class="n">i.</span><span class="t">Manuscripts<small>手稿 · 課程筆記</small></span><span class="c">45 ch.</span></a>' +
         '<a class="item" href="#/maps"><span class="n">ii.</span><span class="t">Terroir Maps<small>風土地圖 · 國家 → 產區 → 地塊</small></span><span class="c">'+REGION_LIST.length+'</span></a>' +
         '<a class="item" href="#/outlines"><span class="n">iii.</span><span class="t">Outlines<small>綱要 · 申論題答題框架</small></span><span class="c">'+FWS.length+'</span></a>' +
       '</div></div>' +
-    '<a class="book-banner" href="#/book"><div><span class="jc-label" style="color:var(--accent)">Cellar &amp; Paper · 酒窖簿</span><h3>The Cellar Book</h3><p>每喝一支酒，就用 WSET SAT 格式留下一頁。之後可以和酒友並排比較同一支酒的判斷。'+(S.book.length?' 你已經寫了 '+S.book.length+' 頁。':'')+'</p></div><span class="jc-btn jc-btn--solid">寫下一頁 Write a note</span></a>' +
+    '<a class="book-banner" href="#/book"><div><span class="jc-label" style="color:var(--accent)">Cellar &amp; Paper · 酒窖簿</span><h3>The Cellar Book</h3><p>每喝一支酒，就留下一頁：顏色、香氣、口感、你的想法。之後可以跟酒友比較同一支酒。'+(S.book.length?' 你已經寫了 '+S.book.length+' 頁。':'')+'</p></div><span class="jc-btn jc-btn--solid">寫下一頁 Write a note</span></a>' +
   '</section>';
 }
 
@@ -448,7 +474,7 @@ function rkQuadSectionHTML(){
       '</div>' +
       '<div class="rk-quad-chart" id="rack-quad-chart"></div>' +
       '<div class="rk-quad-legend" id="rack-quad-legend"></div>' +
-      '<div class="rk-quad-hint">每個點直接標出品種名與主要產區（點太多太擠時可關掉標籤）。滑過點可看完整資訊（含香氣分類）；點一個點 → 打開那支品種的頁面。上面的標籤列（含香氣篩選）選了之後，符合的點會亮起、其餘的點會變淡。Each dot shows its variety, key region, and top aroma clusters on hover. Pick tags above (including aroma) to light up matching dots and dim the rest.</div>' +
+      '<div class="rk-quad-hint">每個點直接標出品種名與主要產區（點太多太擠時可關掉標籤）。滑過點可看完整資訊（含香氣分類）；點一個點 → 打開那支品種的頁面。上面的標籤列（含香氣篩選）選了之後，符合的點會亮起、其餘的點會變淡。熟成期/酒體/酸度三項是資料裡的量化值；單寧／甜度是我依 WSET 教材的常見特徵人工標注（白酒單寧統一視為低；甜度指「這品種在教材裡多常跟甜型酒連在一起」，不是單一酒款的甜度）。Each dot shows its variety, key region, and top aroma clusters on hover. Pick tags above (including aroma) to light up matching dots and dim the rest. Ripening/body/acidity come straight from the data; tannin and sweetness are hand-set from standard L3 characteristics (white tannin treated as uniformly low; sweetness means how associated the grape is with a sweet style, not any one bottle&#39;s).</div>' +
     '</div>' +
   '</div></div>';
 }
@@ -544,8 +570,8 @@ function rkQuadLegendHTML(){
 function pageRacks(){
   const counts = CAT_ORDER.map(c => [GRAPES.filter(g => g.catCode===c).length, 'Rack '+CATS[c].n]);
   PAGE.innerHTML = folio('cellar','01','The <i>Racks</i>','酒架',
-    '八十個 WSET L3 考綱品種，像八十瓶酒排在四座酒架上。按顏色找、按名字找，點一瓶就打開它的整本故事。',
-    'Eighty grape varieties, shelved on four racks. Pull out any bottle to read its whole story.', counts) +
+    '八十種葡萄，像八十瓶酒排在架上。點一瓶，看看它完整的故事。',
+    'Eighty grapes, shelved like bottles. Pick one to read its whole story.', counts) +
   '<div class="toolbar"><div class="cp-container">' +
     '<div class="search-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="rack-q" type="text" placeholder="找一瓶：品種、產區、風味… Find a bottle" value="'+esc(FILT.q)+'" autocomplete="off"></div>' +
     '<div class="chip-row" id="rack-cats">' + ['ALL'].concat(CAT_ORDER).map(c => '<button class="chip'+(FILT.cat===c?' active':'')+'" data-cat="'+c+'" type="button">'+(c==='ALL'?'全部 All':'<span class="sw"></span>'+CATS[c].n+' '+CATS[c].zh)+'</button>').join('') + '</div>' +
@@ -611,8 +637,8 @@ function aromaDetailHTML(g){
 function pageAroma(presetId){
   if(presetId!=null && byId(presetId)){ ARS.selectedId = +presetId; FILT.cat = 'ALL'; FILT.q = ''; FILT.tags = []; FILT.term = null; }
   PAGE.innerHTML = folio('cellar','08','Aroma <i>Map</i>','香氣地圖',
-    '把每個品種「香氣特徵」欄位拆解成 WSET Wine-Lexicon 的一級／二級／三級分類，點一個品種看它的香氣分解，或點色塊篩選有該香氣的品種 — 練 SAT 寫作最實用。跟 The Racks 共用同一套篩選標籤，兩頁選的東西會互相同步。',
-    'Every variety\'s character notes, broken into the Wine-Lexicon\'s primary/secondary/tertiary clusters. Pick a variety to see its breakdown, or click a cluster chip to filter — shares the exact same filter tags as The Racks, in sync both ways.') +
+    '每種葡萄聞起來像什麼？點一個品種看它的香氣，或點色塊找出哪些品種有同樣的味道。',
+    'What does each grape actually smell like? Pick one to see its aromas, or click a flavor to find others that share it.') +
   '<div class="toolbar"><div class="cp-container">' +
     '<div class="search-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="arm-q" type="text" placeholder="找品種：名字、香氣詞… Find a variety" value="'+esc(FILT.q)+'" autocomplete="off"></div>' +
     '<div class="chip-row" id="arm-cats">' + ['ALL'].concat(CAT_ORDER).map(c => '<button class="chip'+(FILT.cat===c?' active':'')+'" data-cat="'+c+'" type="button">'+(c==='ALL'?'全部 All':'<span class="sw"></span>'+CATS[c].n+' '+CATS[c].zh)+'</button>').join('') + '</div>' +
@@ -713,8 +739,8 @@ function pageManuscripts(){
   CHAPTERS.forEach(c => { let p = parts.find(x => x.zh === c.sectionZh); if(!p){ p = { zh:c.sectionZh, en:c.sectionEn, chs:[] }; parts.push(p); } p.chs.push(c); });
   const pct = Math.round(S.read.length / CHAPTERS.length * 100);
   PAGE.innerHTML = folio('paper','02','<i>Manuscripts</i>','手稿',
-    'WSET Level 3 全部 45 章課程筆記，像一本可以慢慢翻的書。讀完一章就在頁尾蓋上「已讀」，目錄會替你記住。',
-    'All 45 chapters of the WSET L3 course, bound like a book. Finish a chapter, mark it read, and the contents will remember.',
+    '45 章的課程筆記，像一本可以慢慢翻的書。讀完一章就打勾，進度自動幫你記住。',
+    '45 chapters of notes, bound like a book. Mark each one read as you go, and it remembers your progress.',
     [[S.read.length+'<small style="font-size:.5em;opacity:.6"> / 45</small>','Chapters read'],[pct+'%','Complete']],
     '<div class="meter" style="margin-top:18px"><i style="width:'+pct+'%"></i></div>') +
   '<div class="cp-container"><div class="contents">' + parts.map((p,pi) =>
@@ -752,8 +778,8 @@ function pageChapter(n){
 const COMPASS = '<svg class="compass" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><circle cx="20" cy="20" r="17"/><path d="M20 5l3.5 15L20 35l-3.5-15z" fill="currentColor" fill-opacity=".15"/><path d="M20 5v30M5 20h30" stroke-width=".5"/><text x="20" y="4" font-size="4" text-anchor="middle" fill="currentColor" stroke="none">N</text></svg>';
 function pageMaps(){
   PAGE.innerHTML = folio('paper','03','Terroir <i>Maps</i>','風土地圖',
-    '十五個國家、'+REGION_LIST.length+' 個產區，攤開像一疊紙本地圖。每個產區都整理了氣候、地形、風土、法規與重要地塊。',
-    'Fifteen countries, folded into paper maps — climate, terrain, terroir and the plots that matter.',
+    '十五個國家、'+REGION_LIST.length+' 個產區，像一疊地圖攤開來。每個地方的氣候、地形怎麼影響一瓶酒，都整理好了。',
+    'Fifteen countries\' wine regions, laid out like paper maps — the climate and land that shape each one.',
     [[REGIONS.length,'Countries'],[REGION_LIST.length,'Regions']]) +
   '<div class="cp-container"><div class="atlas-grid">' + REGIONS.map((c,ci) =>
     '<div class="mapcard'+(c.regions.length>4?' wide':'')+'">'+COMPASS+'<div class="coord"><span>Map '+pad(ci+1)+'</span></div><h3>'+esc(c.en)+'</h3><div class="zh">'+esc(c.zh)+'</div><div class="regs">' +
@@ -777,8 +803,8 @@ function pageRegion(key){
 /* ---------- Outlines ---------- */
 function pageOutlines(){
   PAGE.innerHTML = folio('paper','04','<i>Outlines</i>','綱要',
-    '寫申論題之前先打的草稿。五套答題框架，把「該寫什麼、按什麼順序寫」整理成可以背的骨架。',
-    'Five answer frameworks — the skeleton you sketch before you write.', [[FWS.length,'Frameworks']]) +
+    '寫長答案前的小抄。五套框架，告訴你先寫什麼、再寫什麼。',
+    'Five simple templates for longer answers — what to say, and in what order.', [[FWS.length,'Frameworks']]) +
   '<div class="cp-container"><div class="outline-grid">' + FWS.map(f =>
     '<a class="index-card" href="#/outlines/'+f.num+'"><span class="rn">'+ROMAN[f.num]+'.</span><span class="fw">Framework '+f.num+'</span><h3>'+esc(f.titleZh)+'</h3><div class="en">'+esc(f.titleEn.replace(/^Framework \d+\s*[—-]\s*/,''))+'</div><p>'+esc((f.introZh||'').slice(0,80))+'</p></a>').join('') +
   '</div></div>';
@@ -804,8 +830,8 @@ function pageTasting(){
   const cs = cardStats(), es = examStats();
   const cp = Math.round(cs.ok/80*100), ep = Math.round(es.ok/QS.length*100);
   PAGE.innerHTML = folio('cellar','05','Blind <i>Tasting</i>','盲品',
-    '先別看答案。翻牌猜品種、提筆寫申論，再誠實地替自己打分。答不出來的，會自動排回下一輪。',
-    'Cover the label first. Guess the grape, write the answer, then mark yourself honestly.',
+    '先別看答案，猜猜這是哪種葡萄、寫下你的想法，再自己對答案。',
+    'Guess the grape before you peek, write down your answer, then check yourself.',
     [[cs.ok+'/80','Bottles named'],[es.ok+'/'+QS.length,'Papers nailed']]) + tastingSubnav('home') +
   '<div class="cp-container"><div class="bt-choose">' +
     '<a class="choose a" href="#/tasting/cards"><span class="jc-label">Cellar game · 翻牌</span><h3>Flash Pour<small>翻牌盲品</small></h3><p>每張牌只給你香氣、產地與特性線索，猜出是哪個品種，再翻面揭曉。</p><div class="bottom"><div class="meter"><i style="width:'+cp+'%"></i></div><span class="pct">'+cp+'%</span></div></a>' +
@@ -829,7 +855,7 @@ function mask(g, t){
 }
 function pageCards(startId){
   if(startId != null || !DK.order.length) buildDeck(startId);
-  PAGE.innerHTML = folio('cellar','05','Flash <i>Pour</i>','翻牌盲品','看線索、猜品種、翻牌揭曉。按空白鍵翻牌，← 再一次、→ 認得。','Read the clues, name the grape, flip to reveal.', null) + tastingSubnav('cards') +
+  PAGE.innerHTML = folio('cellar','05','Flash <i>Pour</i>','翻牌盲品','看線索猜猜看，翻牌就知道答案。按空白鍵翻牌，← 再一次、→ 認得。','Read the clue, take a guess, then flip to see the answer.', null) + tastingSubnav('cards') +
   '<div class="cp-container deck-wrap"><div>' +
     '<div class="deck-filter"><div class="chip-row" id="dk-cat">'+['ALL'].concat(CAT_ORDER).map(c => '<button class="chip'+(DK.cat===c?' active':'')+'" data-cat="'+c+'">'+(c==='ALL'?'全部 All':'<span class="sw"></span>'+CATS[c].zh)+'</button>').join('')+'</div>' +
     '<div class="seg" id="dk-mode"><button data-m="all" class="'+(DK.mode==='all'?'on':'')+'">All</button><button data-m="new" class="'+(DK.mode==='new'?'on':'')+'">New</button><button data-m="again" class="'+(DK.mode==='again'?'on':'')+'">Again</button></div></div>' +
@@ -878,7 +904,7 @@ function pageExam(n){
   if(n == null){ const q = QS.find(x => S.exam[x.num] !== 'ok') || QS[0]; location.replace('#/tasting/exam/' + q.num); return; }
   n = +n; const q = QS.find(x => x.num === n); if(!q){ location.hash = '#/tasting'; return; }
   const es = examStats();
-  PAGE.innerHTML = folio('cellar','05','Written <i>Paper</i>','申論模考','先在紙上寫下你的答案，再展開官方答案對照，誠實地替自己標記。','Write first, then reveal and mark yourself.', [[es.ok+'/'+QS.length,'Nailed'],[es.again,'To review']]) + tastingSubnav('exam');
+  PAGE.innerHTML = folio('cellar','05','Written <i>Paper</i>','申論模考','先寫下你的答案，再看看對不對。','Write your answer first, then check it.', [[es.ok+'/'+QS.length,'Nailed'],[es.again,'To review']]) + tastingSubnav('exam');
   showLegacy('exam');
   if(legacyState.exam !== String(n)){ legacyState.exam = String(n); clickLegacy('#exam-sidebar','q',n); }
   const i = QS.indexOf(q), prev = QS[i-1], next = QS[i+1];
@@ -930,16 +956,16 @@ const fmtDate = ts => { const d = new Date(ts); return { d:d.getDate(), m:d.toLo
 function bookList(activeId){
   return '<aside class="book-list"><a class="jc-btn jc-btn--solid" href="#/book/new">＋ 寫一頁 New tasting note</a>' +
     S.book.slice().sort((a,b)=>b.created-a.created).map(e => { const d = fmtDate(e.date || e.created); return '<a class="entry-tab'+(e.id===activeId?' on':'')+'" href="#/book/'+e.id+'"><div class="dt"><b>'+d.d+'</b><span>'+d.m+'</span></div><div><div class="nm">'+esc(e.wine.name || 'Untitled wine')+'</div><div class="sub">'+esc([e.wine.vintage, e.wine.producer, e.wine.region].filter(Boolean).join(' · '))+'</div></div></a>'; }).join('') +
-    '<div class="table-teaser" style="grid-template-columns:1fr"><div><span class="soon">Coming next · 即將推出</span><h4>The Tasting Table</h4><p>酒友桌：登入後分享筆記、互相乾杯 🥂、留言，並排比較同一支酒的 SAT 判斷。</p></div></div></aside>';
+    '<div class="table-teaser" style="grid-template-columns:1fr"><div><span class="soon">Coming next · 即將推出</span><h4>The Tasting Table</h4><p>酒友桌：登入後分享筆記、互相乾杯 🥂、留言，並排比較大家對同一支酒的看法。</p></div></div></aside>';
 }
 function bookFolio(){
   return folio('paper','06','The Cellar <i>Book</i>','酒窖簿',
-    '舊時酒窖主人會用一本簿子記下每瓶酒。這裡是你的：用 WSET SAT 格式記錄每一支喝過的酒。',
-    'A cellar book, the old way — one page per bottle, written in the language of the SAT.', [[S.book.length,'Pages written']]);
+    '以前的酒窖主人會用一本簿子記下每瓶酒。這裡是你的本子：寫下每一支你喝過、嚐過的酒。',
+    'A notebook for every bottle you\'ve tasted — one page each, in your own words.', [[S.book.length,'Pages written']]);
 }
 function pageBook(id){
   if(!S.book.length && !id){
-    PAGE.innerHTML = bookFolio() + '<div class="cp-container book-wrap" style="grid-template-columns:1fr"><div class="book-empty"><span class="jc-label">Page one</span><h3>還是一本空白的酒窖簿</h3><p>下一次開瓶時，用 SAT 的四個段落——外觀、香氣、口感、結論——寫下你的判斷。點選就好，不用打一堆字。</p><a class="jc-btn jc-btn--solid" href="#/book/new">寫下第一頁 Write the first page</a></div></div>';
+    PAGE.innerHTML = bookFolio() + '<div class="cp-container book-wrap" style="grid-template-columns:1fr"><div class="book-empty"><span class="jc-label">Page one</span><h3>還是一本空白的酒窖簿</h3><p>下一次開瓶時，分四段寫下來就好：顏色、聞起來、喝起來、你的整體感覺。大多用點選的，不用打一堆字。</p><a class="jc-btn jc-btn--solid" href="#/book/new">寫下第一頁 Write the first page</a></div></div>';
     return;
   }
   const e = id ? S.book.find(x => x.id === id) : S.book.slice().sort((a,b)=>b.created-a.created)[0];
@@ -1000,7 +1026,7 @@ function pageBookForm(id){
       (sec.k==='nose' ? '<div class="scale-q"><label>Aroma characteristics · 香氣特徵</label><div class="aroma-box">'+Object.keys(AROMAS).map(k => '<div class="aroma-col" data-a="'+k+'"><h5>'+AROMAS[k].en+' · '+AROMAS[k].zh+'</h5><div class="opts">'+AROMAS[k].o.map(o => '<button type="button" class="opt'+((e.aromas[k]||[]).includes(o)?' on':'')+'" data-v="'+esc(o)+'">'+esc(o)+'</button>').join('')+'</div></div>').join('')+'</div><div class="field-in" style="margin-top:12px"><input id="w-aromaText" value="'+esc(e.aromaText)+'" placeholder="更具體的描述，例如：blackcurrant, violet, pencil shavings"></div></div>' : '') +
       (sec.k==='palate' ? '<div class="scale-q"><label>Flavour characteristics · 風味特徵</label><div class="field-in"><input id="w-flavourText" value="'+esc(e.flavourText)+'" placeholder="e.g. blackcurrant, cedar, graphite"></div></div>' : '') +
     '</div>').join('') +
-    '<div class="fs"><div class="fs-h"><span class="n">5</span><h3>Notes<small>心得</small></h3></div><div class="field-in"><textarea id="w-notes" placeholder="搭配的菜、當下的感覺、和 SAT 對不上的地方…">'+esc(e.notes)+'</textarea></div></div>' +
+    '<div class="fs"><div class="fs-h"><span class="n">5</span><h3>Notes<small>心得</small></h3></div><div class="field-in"><textarea id="w-notes" placeholder="搭配的菜、當下的感覺、跟你預期不一樣的地方…">'+esc(e.notes)+'</textarea></div></div>' +
     '<div class="form-foot"><a class="jc-btn" href="'+(ex ? '#/book/'+ex.id : '#/book')+'">取消 Cancel</a><button class="jc-btn jc-btn--solid" type="submit">收進酒窖簿 Save page</button></div>' +
   '</form></div></div>' +
   '<datalist id="dl-grapes">'+GRAPES.map(g => '<option value="'+esc(g.name)+'">').join('')+'</datalist><datalist id="dl-regions">'+REGION_LIST.map(r => '<option value="'+esc(r.region.en)+'">').join('')+'</datalist>';
