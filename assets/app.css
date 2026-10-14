@@ -579,4 +579,8 @@ body[data-lang="en"] .lq-en{ font-size:1em; color:var(--ink); margin-top:0; }
 .rk-quad-legend-sw{ width:10px; height:10px; border-radius:50%; display:inline-block; flex:none; }
 .rk-quad-legend-shape{ font-size:11px; color:var(--ink-faint); }
 .rk-quad-hint{ font-size:10.5px; color:var(--ink-faint); margin-top:8px; }
+.rk-quad-label-btn{ margin-left:auto; }
+.rk-quad-dot-label{ font-size:9.5px; font-family:var(--font-body); fill:var(--ink); paint-order:stroke; stroke:var(--surface); stroke-width:3px; stroke-linejoin:round; pointer-events:none; }
+.rk-quad-dot-label-sub{ fill:var(--ink-faint); font-size:8.5px; }
 :root[data-theme="dark"] .rk-quad{ background:var(--surface); }
+:root[data-theme="dark"] .rk-quad-dot-label{ stroke:var(--surface); }

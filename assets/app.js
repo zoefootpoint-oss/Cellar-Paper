@@ -245,7 +245,7 @@ function pageHome(){
 }
 
 /* ---------- The Racks ---------- */
-const RS = { q:'', cat:'ALL', view: S.prefs.rackView || 'rack', tags:[], quadMetric:'ripen' };
+const RS = { q:'', cat:'ALL', view: S.prefs.rackView || 'rack', tags:[], quadMetric:'ripen', quadLabels:true };
 const RK_TAG_DEFS = [
   { labelZh:'熟成期', labelEn:'Ripening', tags:[['ripen-early','早熟 Early'],['ripen-mid','中熟 Mid'],['ripen-late','晚熟 Late']] },
   { labelZh:'氣候冷熱', labelEn:'Temperature', tags:[['temp-cool','涼爽 Cool'],['temp-moderate','溫和 Moderate'],['temp-warm','溫暖 Warm'],['temp-hot','炎熱 Hot']] },
@@ -259,9 +259,19 @@ function rkTagRowHTML(){
     '<button class="rk-reset-btn" id="rack-tags-reset" type="button"'+(RS.tags.length?'':' hidden')+'>清除標籤 Clear tags</button>' +
   '</div>';
 }
-function rkQuadSVG(metric){
+function rkQuadLabel(g){
+  // short "plot/region" proxy: first key growing region, trimmed of parenthetical detail
+  // (no finer plot-level field exists in the data; country is already shown via dot color, so
+  // prefer the sub-region after the first comma — e.g. "Bordeaux Left Bank" rather than "France, Bordeaux Left Bank")
+  const raw = g.f(1).en[0] || g.f(1).zh[0] || '';
+  const trimmed = raw ? shortRegion(raw) : '';
+  const comma = trimmed.indexOf(',');
+  const region = comma > -1 ? trimmed.slice(comma + 1).trim() : trimmed;
+  return { name: g.main, region };
+}
+function rkQuadSVG(metric, showLabels){
   const m = QUAD_METRICS[metric];
-  const W = 900, H = 520, L = 60, R = 20, T = 18, B = 50;
+  const W = 1180, H = 720, L = 70, R = 24, T = 18, B = 56;
   const PW = W - L - R, PH = H - T - B, yMax = 3;
   function hash(n, salt){ const x = Math.sin(n * 12.9898 + salt * 78.233) * 43758.5453; return x - Math.floor(x); }
   function px(xVal, seed){ const jx = (hash(seed,1)-0.5)*0.6; const v = Math.max(1, Math.min(4, xVal+jx)); return L + (v-1)/3*PW; }
@@ -269,18 +279,26 @@ function rkQuadSVG(metric){
   let gridLines = '';
   for(let gx=1; gx<=4; gx++){ const x = L+(gx-1)/3*PW; gridLines += '<line class="rk-quad-grid-line" x1="'+x+'" y1="'+T+'" x2="'+x+'" y2="'+(T+PH)+'"/>'; }
   for(let gy=1; gy<=3; gy++){ const y = T+PH-(gy-1)/2*PH; gridLines += '<line class="rk-quad-grid-line" x1="'+L+'" y1="'+y+'" x2="'+(L+PW)+'" y2="'+y+'"/>'; }
-  const dots = GRAPES.map(g => {
-    const v = g.viz; if(!v) return '';
+  const dots = [], labels = [];
+  GRAPES.forEach(g => {
+    const v = g.viz; if(!v) return;
     const cx = px(v.temp, g.id), cy = py(v[metric], g.id+1000);
     const color = COUNTRY_COLORS[v.country] || 'var(--ink)';
     const isWhite = g.class === 'white';
     const fill = isWhite ? 'var(--surface)' : color;
     const sw = isWhite ? 2.2 : 1.2;
-    return '<circle class="rk-quad-dot" data-id="'+g.id+'" cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="6" fill="'+fill+'" stroke="'+color+'" stroke-width="'+sw+'" opacity="0.88"><title>'+esc(g.main)+' ('+esc(v.country)+') — '+esc(g.catZh)+'</title></circle>';
-  }).join('');
+    dots.push('<circle class="rk-quad-dot" data-id="'+g.id+'" cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="5" fill="'+fill+'" stroke="'+color+'" stroke-width="'+sw+'" opacity="0.9"><title>'+esc(g.main)+' ('+esc(v.country)+') — '+esc(g.catZh)+'</title></circle>');
+    if(showLabels){
+      const lab = rkQuadLabel(g);
+      const flip = cx > L + PW * 0.8; // near the right edge: anchor the label to the left of the dot instead of clipping off-canvas
+      const lx = flip ? cx - 7 : cx + 7, ly = cy + 3;
+      const anchor = flip ? ' text-anchor="end"' : '';
+      labels.push('<text class="rk-quad-dot-label" data-id="'+g.id+'" x="'+lx.toFixed(1)+'" y="'+ly.toFixed(1)+'"'+anchor+'>'+esc(lab.name)+(lab.region ? '<tspan class="rk-quad-dot-label-sub" dx="4">'+esc(lab.region)+'</tspan>' : '')+'</text>');
+    }
+  });
   return '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">' + gridLines +
     '<line class="rk-quad-axis-line" x1="'+L+'" y1="'+T+'" x2="'+L+'" y2="'+(T+PH)+'"/>' +
-    '<line class="rk-quad-axis-line" x1="'+L+'" y1="'+(T+PH)+'" x2="'+(L+PW)+'" y2="'+(T+PH)+'"/>' + dots +
+    '<line class="rk-quad-axis-line" x1="'+L+'" y1="'+(T+PH)+'" x2="'+(L+PW)+'" y2="'+(T+PH)+'"/>' + dots.join('') + labels.join('') +
     '<text class="rk-quad-axis-label" x="'+L+'" y="'+(T+PH+20)+'">涼爽 Cool</text>' +
     '<text class="rk-quad-axis-label" x="'+(L+PW)+'" y="'+(T+PH+20)+'" text-anchor="end">炎熱 Hot</text>' +
     '<text class="rk-quad-axis-label" x="'+(L+PW/2)+'" y="'+(T+PH+38)+'" text-anchor="middle">氣候冷熱 Climate Temperature →</text>' +
@@ -309,22 +327,31 @@ function pageRacks(){
     '<div class="rk-quad-body" id="rack-quad-body">' +
       '<div class="rk-quad-toggle" id="rack-quad-metric"><span class="rk-quad-toggle-label">縱軸 Y axis:</span>' +
         Object.keys(QUAD_METRICS).map(k => '<button class="rk-quadbtn'+(RS.quadMetric===k?' active':'')+'" data-metric="'+k+'" type="button">'+esc(QUAD_METRICS[k].zh)+' '+esc(QUAD_METRICS[k].en)+'</button>').join('') +
+        '<button class="rk-quadbtn rk-quad-label-btn'+(RS.quadLabels?' active':'')+'" id="rack-quad-label-btn" type="button">標籤 Labels '+(RS.quadLabels?'開 On':'關 Off')+'</button>' +
       '</div>' +
       '<div class="rk-quad-chart" id="rack-quad-chart"></div>' +
       '<div class="rk-quad-legend" id="rack-quad-legend"></div>' +
-      '<div class="rk-quad-hint">點一個點 → 打開那支品種的頁面。Click a dot to open that variety\'s page.</div>' +
+      '<div class="rk-quad-hint">每個點直接標出品種名與主要產區（點太多太擠時可關掉標籤）。滑過點可看完整資訊；點一個點 → 打開那支品種的頁面。Each dot is labelled with its variety and key region — hover for full detail, click to open that variety\'s page.</div>' +
     '</div>' +
   '</div></div>' +
   '<div class="cp-container" id="rack-body"></div>';
   const body = $('#rack-body');
 
   function drawQuad(){
-    $('#rack-quad-chart').innerHTML = rkQuadSVG(RS.quadMetric);
+    $('#rack-quad-chart').innerHTML = rkQuadSVG(RS.quadMetric, RS.quadLabels);
     $('#rack-quad-legend').innerHTML = rkQuadLegendHTML();
   }
   $('#rack-quad-metric').addEventListener('click', e => {
-    const b = e.target.closest('.rk-quadbtn'); if(!b) return;
-    $$('#rack-quad-metric .rk-quadbtn').forEach(x => x.classList.remove('active'));
+    const labelBtn = e.target.closest('#rack-quad-label-btn');
+    if(labelBtn){
+      RS.quadLabels = !RS.quadLabels;
+      labelBtn.classList.toggle('active', RS.quadLabels);
+      labelBtn.textContent = '標籤 Labels ' + (RS.quadLabels ? '開 On' : '關 Off');
+      drawQuad();
+      return;
+    }
+    const b = e.target.closest('.rk-quadbtn'); if(!b || b.id==='rack-quad-label-btn') return;
+    $$('#rack-quad-metric .rk-quadbtn').forEach(x => { if(x.id!=='rack-quad-label-btn') x.classList.remove('active'); });
     b.classList.add('active'); RS.quadMetric = b.dataset.metric; drawQuad();
   });
   $('#rack-quad-chart').addEventListener('click', e => {
