@@ -584,3 +584,41 @@ body[data-lang="en"] .lq-en{ font-size:1em; color:var(--ink); margin-top:0; }
 .rk-quad-dot-label-sub{ fill:var(--ink-faint); font-size:8.5px; }
 :root[data-theme="dark"] .rk-quad{ background:var(--surface); }
 :root[data-theme="dark"] .rk-quad-dot-label{ stroke:var(--surface); }
+
+/* ---- Aroma Map (SAT Wine-Lexicon explorer) ---- */
+.arm-legend{ border:1px solid var(--line); border-radius:var(--r-card); background:var(--surface); padding:16px 18px; margin:18px 0; }
+.arm-legend-row{ display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-bottom:10px; }
+.arm-legend-row:last-of-type{ margin-bottom:0; }
+.arm-legend-label{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); margin-right:4px; min-width:84px; }
+.arm-legend-label .en{ display:block; font-size:9px; text-transform:none; letter-spacing:0; font-style:italic; }
+.arm-chip{ font-size:11px; padding:6px 12px; border-radius:var(--r-pill); border:1px solid color-mix(in srgb, var(--c) 45%, var(--line)); background:color-mix(in srgb, var(--c) 10%, transparent); color:var(--ink-dim); cursor:pointer; line-height:1.3; }
+.arm-chip .en{ font-size:9.5px; opacity:.75; font-style:italic; }
+.arm-chip:hover{ border-color:var(--c); }
+.arm-chip.active{ background:var(--c); border-color:var(--c); color:#fff; }
+.arm-hint{ font-size:10.5px; color:var(--ink-faint); margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); }
+.arm-wrap{ display:grid; grid-template-columns:260px 1fr; gap:0; border:1px solid var(--line); border-radius:var(--r-card); overflow:hidden; background:var(--surface); min-height:420px; }
+.arm-list{ border-right:1px solid var(--line); max-height:720px; overflow-y:auto; }
+.arm-row{ width:100%; display:flex; align-items:center; gap:8px; padding:10px 14px; background:none; border:none; border-bottom:1px solid var(--line-soft, var(--line)); cursor:pointer; text-align:left; font-size:12.5px; color:var(--ink-dim); }
+.arm-row .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+.arm-row .nm{ flex:1; }
+.arm-row .rk{ font-size:10px; color:var(--ink-faint); }
+.arm-row:hover{ background:var(--paper); }
+.arm-row.on{ background:var(--accent); color:var(--accent-ink); }
+.arm-row.on .rk{ color:var(--accent-ink); opacity:.8; }
+.arm-detail{ padding:22px 24px; }
+.arm-detail-head{ display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.arm-detail-head .dot{ width:10px; height:10px; border-radius:50%; flex:none; }
+.arm-detail-head h3{ font-family:var(--font-display); font-size:22px; margin:0; flex:1; }
+.arm-empty, .arm-none{ color:var(--ink-faint); font-size:13px; padding:30px 6px; }
+.arm-cols{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.arm-col h4{ font-family:var(--font-display); font-size:14px; margin:0 0 10px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+.arm-col h4 small{ display:block; font-size:10px; font-style:italic; color:var(--ink-faint); font-family:var(--font-body); margin-top:2px; }
+.arm-cluster{ margin-bottom:12px; }
+.arm-cluster b{ display:block; font-size:11px; font-weight:600; color:var(--c); margin-bottom:5px; }
+.arm-cluster b .en{ font-weight:400; font-style:italic; opacity:.8; }
+.arm-terms{ display:flex; flex-wrap:wrap; gap:5px; }
+.arm-term{ font-size:11px; padding:4px 9px; border-radius:var(--r-pill); background:color-mix(in srgb, var(--c) 14%, var(--paper)); border:1px solid color-mix(in srgb, var(--c) 35%, var(--line)); color:var(--ink); }
+.arm-term-other{ background:var(--paper); border-color:var(--line); color:var(--ink-faint); }
+.arm-other{ margin-top:18px; padding-top:14px; border-top:1px dashed var(--line); }
+.arm-other-label{ display:block; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:8px; }
+@media (max-width:860px){ .arm-wrap{ grid-template-columns:1fr; } .arm-list{ border-right:none; border-bottom:1px solid var(--line); max-height:260px; } .arm-cols{ grid-template-columns:1fr; } .arm-legend-label{ min-width:0; width:100%; margin-bottom:2px; } }

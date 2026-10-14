@@ -135,6 +135,82 @@ GRAPES.forEach(g => grapeRegionCache[g.id] = regionsForGrape(g).map(e => e.key))
 const grapesForRegion = key => GRAPES.filter(g => grapeRegionCache[g.id].includes(key));
 const chapterRegion = num => REGION_LIST.find(e => e.region.chapterNum === num);
 
+/* ---------- SAT Wine-Lexicon aroma map ---------- */
+// Clusters follow the WSET Wine-Lexicon structure (Primary / Secondary / Tertiary → clusters → descriptors).
+// Each grape's own "field 6" character text is matched against these keyword lists to classify its descriptors.
+const AROMA_CLUSTERS = [
+  { id:'floral', level:'primary', zh:'花香', en:'Floral', color:'#B8527A', keywords:['acacia','honeysuckle','chamomile','elderflower','geranium','orange blossom','blossom','violet','rose','musk','flower','floral'] },
+  { id:'green_fruit', level:'primary', zh:'綠色水果', en:'Green fruit', color:'#7A9A3E', keywords:['gooseberry','quince','green apple','green fruit','apple','pear'] },
+  { id:'citrus', level:'primary', zh:'柑橘類', en:'Citrus fruit', color:'#D9A431', keywords:['grapefruit','orange peel','orange zest','lemon','lime','citrus'] },
+  { id:'stone_fruit', level:'primary', zh:'核果', en:'Stone fruit', color:'#E08A4B', keywords:['peach','apricot','nectarine','stone fruit'] },
+  { id:'tropical', level:'primary', zh:'熱帶水果', en:'Tropical fruit', color:'#D9C23A', keywords:['passion fruit','lychee','mango','pineapple','banana','bubblegum','melon','grapey'] },
+  { id:'red_fruit', level:'primary', zh:'紅色水果', en:'Red fruit', color:'#C1485A', keywords:['redcurrant','red currant','cranberry','raspberry','strawberry','sour cherry','red cherry','red plum','red berry','red fruit','cherry','plum','red'] },
+  { id:'black_fruit', level:'primary', zh:'黑色水果', en:'Black fruit', color:'#6B2A3A', keywords:['blackcurrant','cassis','blackberry','blueberry','black cherry','black plum','black fruit','black olive','black'] },
+  { id:'dried_cooked', level:'primary', zh:'乾燥/熟煮水果', en:'Dried/cooked fruit', color:'#8A5A33', keywords:['raisined','sultana','raisin','jamminess','kirsch','fig','prune','dried berries','dried fruit'] },
+  { id:'herbaceous', level:'primary', zh:'草本/青綠調', en:'Herbaceous', color:'#4E7A4E', keywords:['green pepper','bell pepper','tomato leaf','asparagus','grass','herbaceous'] },
+  { id:'herbal', level:'primary', zh:'藥草調', en:'Herbal', color:'#3E8E7E', keywords:['eucalyptus','lavender','fennel','mint','dried herbs','herbs'] },
+  { id:'pungent_spice', level:'primary', zh:'辛香料', en:'Pungent spice', color:'#8E3E3E', keywords:['black pepper','white pepper','liquorice','licorice','pepper','spice'] },
+  { id:'other_primary', level:'primary', zh:'其他', en:'Other', color:'#6E6A5E', keywords:['wet stone','wet wool','flint','mineral','graphite','pencil shavings','smoked meat','olive'] },
+  { id:'yeast', level:'secondary', zh:'酒渣/自溶', en:'Yeast/lees', color:'#C9A227', keywords:['brioche','biscuit','pastry','bread','dough','toast'] },
+  { id:'mlf', level:'secondary', zh:'乳酸發酵', en:'MLF', color:'#D9B86A', keywords:['buttery','creamy','butter','cream','cheese'] },
+  { id:'oak', level:'secondary', zh:'橡木', en:'Oak', color:'#9C6B30', keywords:['butterscotch','charred wood','new oak','baking spice','cardamom','cedar','vanilla','clove','nutmeg','coconut','resinous','smoke','cocoa'] },
+  { id:'oxidation', level:'tertiary', zh:'刻意氧化', en:'Deliberate oxidation', color:'#7A4A2A', keywords:['marzipan','hazelnut','walnut','almond','chocolate','coffee','toffee','caramel'] },
+  { id:'fruit_dev_white', level:'tertiary', zh:'白酒果實發展', en:'Fruit development (white)', color:'#B08D3E', keywords:['dried apricot','marmalade','dried apple','dried banana'] },
+  { id:'fruit_dev_red', level:'tertiary', zh:'紅酒果實發展', en:'Fruit development (red)', color:'#6E3A3A', keywords:['dried blackberry','dried cranberry','stewed blackberry','stewed red plum','tar'] },
+  { id:'bottle_age_white', level:'tertiary', zh:'白酒瓶陳', en:'Bottle age (white)', color:'#8C7A4E', keywords:['petrol','kerosene','cinnamon','ginger','mushroom','hay','honey','nut'] },
+  { id:'bottle_age_red', level:'tertiary', zh:'紅酒瓶陳', en:'Bottle age (red)', color:'#4A3A2E', keywords:['forest floor','wet leaves','farmyard','leather','game','tobacco','vegetal','savoury','meaty','truffle','earth'] }
+];
+const AROMA_LEVELS = [
+  { id:'primary', zh:'一級香氣', en:'Primary — grape & fermentation' },
+  { id:'secondary', zh:'二級香氣', en:'Secondary — winemaking' },
+  { id:'tertiary', zh:'三級香氣', en:'Tertiary — ageing' }
+];
+const AROMA_BY_ID = {}; AROMA_CLUSTERS.forEach(c => AROMA_BY_ID[c.id] = c);
+// flatten every keyword, longest first, so e.g. "dried apricot" wins over "apricot", "grapefruit" wins over bare "grape"
+const AROMA_FLAT = AROMA_CLUSTERS.flatMap(c => c.keywords.map(kw => ({ kw, cluster:c }))).sort((a,b) => b.kw.length - a.kw.length);
+const reEscA = s => s.replace(/[.*+?^${}()|[\]\\\/]/g,'\\$&');
+function classifyAromaTerm(term){
+  const clean = term.toLowerCase().replace(/\([^)]*\)/g,' ').replace(/[^a-z\s\/]/g,' ');
+  for(const {kw, cluster} of AROMA_FLAT){
+    if(new RegExp('(^|[^a-z])'+reEscA(kw)).test(clean)) return cluster; // suffix-tolerant: matches "toasty", "earthy", "honeyed" etc.
+  }
+  return null;
+}
+// Grapes' free-text "character" field mixes real aroma descriptors with stylistic/structural commentary
+// ("usually a single variety", "required by DOC regulations", colour, body, acidity remarks) — these are
+// filtered out before classification rather than left to clutter the "unclassified" bucket.
+const AROMA_DROP = /\bsingle variety\b|\bbottled as\b|\bblend|\brequired by\b|\bPDO\b|\bDOC\b|\bAVA\b|\bAOC\b|\bregulations?\b|\bterroir\b|\bfoundation of\b|\bresembles\b|g\/L|residual sugar|\bcolour\b|\bcolor\b|\btannin\b|\bacidity\b|\bstyle\b|\belegant\b|\bshowcase|\bcontributes\b|\bneutral\b|\btexture\b|\bbody\b|^usually\b|^generally\b|^typically\b|^made\b/i;
+const AROMA_FILLER = /^(developing\s+|complex\s+|hints?\s+of\s+|notes?\s+of\s+|with\s+|showing\s+|some\s+|a\s+touch\s+of\s+|touch\s+of\s+|fresh\s+|light\s+)/i;
+function aromaRawTerms(g){
+  const f6 = g.f(6).en; if(!f6.length) return [];
+  const mainLine = f6[0].split(/\s+—\s+/)[0];
+  const extra = f6.slice(1).filter(l => !/blend/i.test(l));
+  const lines = [mainLine].concat(extra);
+  const terms = [];
+  lines.forEach(line => {
+    const body = line.replace(/^[^:]{1,24}:\s*/, '');
+    body.split(/,(?![^(]*\))|\s+and\s+(?![^(]*\))/).forEach(t => {
+      let term = t.trim().replace(/\s+aromas?$|\s+notes?$|\s+character$|\s+flavou?rs?$/i,'').trim();
+      let prev;
+      do { prev = term; term = term.replace(AROMA_FILLER,'').trim(); } while(term !== prev && term);
+      if(term && !AROMA_DROP.test(term)) terms.push(term);
+    });
+  });
+  return terms;
+}
+const AROMA_CACHE = {};
+GRAPES.forEach(g => {
+  const terms = aromaRawTerms(g);
+  const byCluster = {}; const other = [];
+  terms.forEach(term => {
+    const c = classifyAromaTerm(term);
+    if(c){ (byCluster[c.id] = byCluster[c.id] || []).push(term); }
+    else other.push(term);
+  });
+  AROMA_CACHE[g.id] = { terms, byCluster, other, clusterIds: Object.keys(byCluster) };
+});
+const grapesForCluster = id => GRAPES.filter(g => AROMA_CACHE[g.id].clusterIds.includes(id));
+
 /* ---------- legacy bridges ---------- */
 const LEG = { notes:$('#view-notes'), regions:$('#view-regions'), framework:$('#view-framework'), exam:$('#view-exam') };
 const legacyState = { notes:null, regions:null, framework:null, exam:null };
@@ -246,6 +322,7 @@ function pageHome(){
 
 /* ---------- The Racks ---------- */
 const RS = { q:'', cat:'ALL', view: S.prefs.rackView || 'rack', tags:[], quadMetric:'ripen', quadLabels:true };
+const ARS = { q:'', cat:'ALL', clusters:[], selectedId:null };
 const RK_TAG_DEFS = [
   { labelZh:'熟成期', labelEn:'Ripening', tags:[['ripen-early','早熟 Early'],['ripen-mid','中熟 Mid'],['ripen-late','晚熟 Late']] },
   { labelZh:'氣候冷熱', labelEn:'Temperature', tags:[['temp-cool','涼爽 Cool'],['temp-moderate','溫和 Moderate'],['temp-warm','溫暖 Warm'],['temp-hot','炎熱 Hot']] },
@@ -393,6 +470,70 @@ function pageRacks(){
   $('#rack-q').addEventListener('input', e => { RS.q = e.target.value.trim(); draw(); });
   $('#rack-cats').addEventListener('click', e => { const b = e.target.closest('.chip'); if(!b) return; RS.cat = b.dataset.cat; $$('#rack-cats .chip').forEach(x => x.classList.toggle('active', x===b)); draw(); });
   $('#rack-view').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; RS.view = b.dataset.v; S.prefs.rackView = RS.view; save(); $$('#rack-view button').forEach(x => x.classList.toggle('on', x===b)); draw(); });
+  draw();
+}
+
+/* ---------- Aroma Map — SAT Wine-Lexicon explorer ---------- */
+function aromaClusterChipHTML(c, active){
+  return '<button type="button" class="arm-chip'+(active?' active':'')+'" data-cluster="'+c.id+'" style="--c:'+c.color+'" aria-pressed="'+(active?'true':'false')+'">'+esc(c.zh)+' <span class="en">'+esc(c.en)+'</span></button>';
+}
+function aromaGrapeMatches(g){
+  if(ARS.cat!=='ALL' && g.catCode!==ARS.cat) return false;
+  if(ARS.q && !g.hay.includes(ARS.q.toLowerCase())) return false;
+  if(ARS.clusters.length && !ARS.clusters.every(id => AROMA_CACHE[g.id].clusterIds.includes(id))) return false;
+  return true;
+}
+function aromaDetailHTML(g){
+  if(!g) return '<div class="arm-empty">選一個品種看它的香氣分解。<br><span class="en">Pick a variety on the left to break down its aromas.</span></div>';
+  const cache = AROMA_CACHE[g.id];
+  const cols = AROMA_LEVELS.map(lv => {
+    const clustersHere = AROMA_CLUSTERS.filter(c => c.level===lv.id && cache.byCluster[c.id]);
+    if(!clustersHere.length) return '<div class="arm-col"><h4>'+esc(lv.zh)+'<small>'+esc(lv.en)+'</small></h4><p class="arm-none">（無明顯此類描述 — none noted）</p></div>';
+    return '<div class="arm-col"><h4>'+esc(lv.zh)+'<small>'+esc(lv.en)+'</small></h4>' +
+      clustersHere.map(c => '<div class="arm-cluster"><b style="--c:'+c.color+'">'+esc(c.zh)+' <span class="en">'+esc(c.en)+'</span></b><div class="arm-terms">' +
+        cache.byCluster[c.id].map(t => '<span class="arm-term" style="--c:'+c.color+'">'+esc(t)+'</span>').join('') + '</div></div>').join('') +
+    '</div>';
+  }).join('');
+  const other = cache.other.length ? '<div class="arm-other"><span class="arm-other-label">其他描述（未特別分類）Other notes</span><div class="arm-terms">' + cache.other.map(t => '<span class="arm-term arm-term-other">'+esc(t)+'</span>').join('') + '</div></div>' : '';
+  return '<div class="arm-detail-head"><span class="dot" style="background:var(--cat-'+g.catCode.toLowerCase()+')"></span><h3>'+esc(g.main)+'</h3><a class="xlink" href="#/racks/'+g.id+'">打開這瓶 Open bottle →</a></div>' +
+    '<div class="arm-cols">' + cols + '</div>' + other;
+}
+function pageAroma(){
+  PAGE.innerHTML = folio('cellar','08','Aroma <i>Map</i>','香氣地圖',
+    '把每個品種「香氣特徵」欄位拆解成 WSET Wine-Lexicon 的一級／二級／三級分類，點一個品種看它的香氣分解，或點色塊篩選有該香氣的品種 — 練 SAT 寫作最實用。',
+    'Every variety\'s character notes, broken into the Wine-Lexicon\'s primary/secondary/tertiary clusters. Pick a variety to see its breakdown, or click a cluster chip to filter — built for SAT practice.') +
+  '<div class="toolbar"><div class="cp-container">' +
+    '<div class="search-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="arm-q" type="text" placeholder="找品種：名字、香氣詞… Find a variety" value="'+esc(ARS.q)+'" autocomplete="off"></div>' +
+    '<div class="chip-row" id="arm-cats">' + ['ALL'].concat(CAT_ORDER).map(c => '<button class="chip'+(ARS.cat===c?' active':'')+'" data-cat="'+c+'" type="button">'+(c==='ALL'?'全部 All':'<span class="sw"></span>'+CATS[c].n+' '+CATS[c].zh)+'</button>').join('') + '</div>' +
+  '</div></div>' +
+  '<div class="cp-container"><div class="arm-legend" id="arm-legend">' +
+    AROMA_LEVELS.map(lv => '<div class="arm-legend-row"><span class="arm-legend-label">'+esc(lv.zh)+' <span class="en">'+esc(lv.en)+'</span></span>' +
+      AROMA_CLUSTERS.filter(c => c.level===lv.id).map(c => aromaClusterChipHTML(c, ARS.clusters.includes(c.id))).join('') + '</div>').join('') +
+    '<div class="arm-hint">點色塊可複選篩選（須同時符合）；再點一次取消。Click chips to filter (AND logic) — click again to clear.</div>' +
+  '</div></div>' +
+  '<div class="cp-container"><div class="arm-wrap">' +
+    '<div class="arm-list" id="arm-list"></div>' +
+    '<div class="arm-detail" id="arm-detail"></div>' +
+  '</div></div><div style="height:90px"></div>';
+
+  function draw(){
+    const list = GRAPES.filter(aromaGrapeMatches);
+    if(ARS.selectedId!=null && !list.some(g => g.id===ARS.selectedId)) ARS.selectedId = null;
+    if(ARS.selectedId==null && list.length) ARS.selectedId = list[0].id;
+    $('#arm-list').innerHTML = list.length ? list.map(g => '<button type="button" class="arm-row'+(g.id===ARS.selectedId?' on':'')+'" data-id="'+g.id+'"><span class="dot" style="background:var(--cat-'+g.catCode.toLowerCase()+')"></span><span class="nm">'+esc(g.main)+'</span><span class="rk">'+CATS[g.catCode].n+'·'+pad(g.no)+'</span></button>').join('')
+      : '<p class="arm-none" style="padding:14px">沒有符合篩選條件的品種。No varieties match these filters.</p>';
+    $('#arm-detail').innerHTML = aromaDetailHTML(byId(ARS.selectedId));
+  }
+  $('#arm-q').addEventListener('input', e => { ARS.q = e.target.value.trim(); draw(); });
+  $('#arm-cats').addEventListener('click', e => { const b = e.target.closest('.chip'); if(!b) return; ARS.cat = b.dataset.cat; $$('#arm-cats .chip').forEach(x => x.classList.toggle('active', x===b)); draw(); });
+  $('#arm-legend').addEventListener('click', e => {
+    const b = e.target.closest('.arm-chip'); if(!b) return;
+    const id = b.dataset.cluster; const i = ARS.clusters.indexOf(id);
+    if(i>-1) ARS.clusters.splice(i,1); else ARS.clusters.push(id);
+    $$('#arm-legend .arm-chip').forEach(x => x.classList.toggle('active', ARS.clusters.includes(x.dataset.cluster)));
+    draw();
+  });
+  $('#arm-list').addEventListener('click', e => { const b = e.target.closest('.arm-row'); if(!b) return; ARS.selectedId = +b.dataset.id; draw(); });
   draw();
 }
 
@@ -833,6 +974,7 @@ function route(){
   $('.cp-drawer').classList.remove('open');
   switch(top){
     case 'racks': seg[1] != null ? pageBottle(seg[1]) : pageRacks(); break;
+    case 'aroma': pageAroma(); break;
     case 'manuscripts': seg[1] ? pageChapter(seg[1]) : pageManuscripts(); break;
     case 'maps': seg[1] ? pageRegion(seg[1]) : pageMaps(); break;
     case 'outlines': seg[1] ? pageOutline(seg[1]) : pageOutlines(); break;
@@ -850,7 +992,7 @@ function route(){
     default: pageHome();
   }
   setNav(top);
-  const titles = { home:'', racks:'The Racks 酒架', manuscripts:'Manuscripts 手稿', maps:'Terroir Maps 風土地圖', outlines:'Outlines 綱要', tasting:'Blind Tasting 盲品', book:'Cellar Book 酒窖簿', my:'My Cellar 我的酒窖' };
+  const titles = { home:'', racks:'The Racks 酒架', aroma:'Aroma Map 香氣地圖', manuscripts:'Manuscripts 手稿', maps:'Terroir Maps 風土地圖', outlines:'Outlines 綱要', tasting:'Blind Tasting 盲品', book:'Cellar Book 酒窖簿', my:'My Cellar 我的酒窖' };
   document.title = (titles[top] ? titles[top] + ' · ' : '') + 'Cellar & Paper 酒窖與紙張';
   PAGE.classList.remove('fade-in'); void PAGE.offsetWidth; PAGE.classList.add('fade-in');
   window.scrollTo(0, 0);
