@@ -332,6 +332,9 @@ function pageHome(){
 const FILT = { cat:'ALL', q:'', tags:[], term:null };
 const RS = { view: S.prefs.rackView || 'rack', quadMetric:'ripen', quadLabels:true };
 const ARS = { selectedId:null };
+// Collapsed by default so the (fairly tall) tag panel doesn't push page content down; shared
+// across pages so opening/closing it on one page keeps it the same way on the other.
+let TAG_PANEL_OPEN = false;
 const RK_TAG_DEFS = [
   { labelZh:'熟成期', labelEn:'Ripening', tags:[['ripen-early','早熟 Early'],['ripen-mid','中熟 Mid'],['ripen-late','晚熟 Late']] },
   { labelZh:'氣候冷熱', labelEn:'Temperature', tags:[['temp-cool','涼爽 Cool'],['temp-moderate','溫和 Moderate'],['temp-warm','溫暖 Warm'],['temp-hot','炎熱 Hot']] },
@@ -355,21 +358,38 @@ function rkTagGroupHTML(grp){
   return '<div class="rk-tag-group"><span class="rk-tag-group-label">'+esc(grp.labelZh)+' '+esc(grp.labelEn)+'</span>' +
     grp.tags.map(rkTagBtnHTML).join('') + '</div>';
 }
+// Collapsible card (same expand/collapse language as the quadrant map below) so the tag panel
+// doesn't sit open and push the shelf/list down by default — it opens on demand, and shows a
+// small count badge on the closed header whenever filters are active so nothing is "invisible".
 function rkTagRowHTML(){
   // the word-level banner shows wherever this row is rendered, since FILT.term can now be set
   // from either page (e.g. clicking a descriptor on the Aroma Map still shows here on The Racks)
   const termBanner = FILT.term ? '<div class="arm-term-banner">篩選香氣詞 Filtering by · <b>'+esc(FILT.term)+'</b><button type="button" id="rack-term-clear">清除 ✕</button></div>' : '';
-  return '<div class="rk-tag-row" id="rack-tags">' + RK_TAG_DEFS.map(rkTagGroupHTML).join('') +
-    '<div class="rk-tag-divider">香氣篩選 Aroma filters<small>（與 Aroma Map 香氣地圖共用 — shared with the Aroma Map page）</small></div>' +
-    RK_AROMA_TAG_DEFS.map(rkTagGroupHTML).join('') +
-    '<button class="rk-reset-btn" id="rack-tags-reset" type="button"'+(FILT.tags.length?'':' hidden')+'>清除標籤 Clear tags</button>' +
-    termBanner +
+  const activeN = FILT.tags.length + (FILT.term ? 1 : 0);
+  const badge = activeN ? '<span class="rk-tag-count">'+activeN+'</span>' : '';
+  return '<div class="rk-tag-panel" id="rack-tags">' +
+    '<button type="button" class="rk-quad-head rk-tag-head" id="rack-tags-toggle-btn" aria-expanded="'+(TAG_PANEL_OPEN?'true':'false')+'">' +
+      '<span class="zh">篩選標籤</span> <span class="en">Filter tags</span>' + badge +
+      '<svg class="rk-quad-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>' +
+    '</button>' +
+    '<div class="rk-quad-body rk-tag-row" id="rack-tags-body"'+(TAG_PANEL_OPEN?'':' hidden')+'>' +
+      RK_TAG_DEFS.map(rkTagGroupHTML).join('') +
+      '<div class="rk-tag-divider">香氣篩選 Aroma filters<small>（與 Aroma Map 香氣地圖共用 — shared with the Aroma Map page）</small></div>' +
+      RK_AROMA_TAG_DEFS.map(rkTagGroupHTML).join('') +
+      '<button class="rk-reset-btn" id="rack-tags-reset" type="button"'+(FILT.tags.length?'':' hidden')+'>清除標籤 Clear tags</button>' +
+      termBanner +
+    '</div>' +
   '</div>';
 }
-// Shared click handler for the tag row above — identical behaviour wherever rkTagRowHTML() is
+// Shared click handler for the panel above — identical behaviour wherever rkTagRowHTML() is
 // rendered (The Racks page or the Aroma Map page), since both write to the same FILT object.
 function bindTagRow(onChange){
-  $('#rack-tags').addEventListener('click', e => {
+  $('#rack-tags-toggle-btn').addEventListener('click', () => {
+    TAG_PANEL_OPEN = !TAG_PANEL_OPEN;
+    $('#rack-tags-toggle-btn').setAttribute('aria-expanded', String(TAG_PANEL_OPEN));
+    $('#rack-tags-body').hidden = !TAG_PANEL_OPEN;
+  });
+  $('#rack-tags-body').addEventListener('click', e => {
     const resetBtn = e.target.closest('#rack-tags-reset');
     if(resetBtn){ FILT.tags = []; $('#rack-tags').outerHTML = rkTagRowHTML(); bindTagRow(onChange); onChange(); return; }
     if(e.target.closest('#rack-term-clear')){ FILT.term = null; $('#rack-tags').outerHTML = rkTagRowHTML(); bindTagRow(onChange); onChange(); return; }
@@ -377,8 +397,18 @@ function bindTagRow(onChange){
     const tag = b.dataset.tag; const idx = FILT.tags.indexOf(tag);
     if(idx === -1) FILT.tags.push(tag); else FILT.tags.splice(idx, 1);
     b.classList.toggle('active'); $('#rack-tags-reset').hidden = !FILT.tags.length;
+    updateTagCountBadge();
     onChange();
   });
+}
+function updateTagCountBadge(){
+  const btn = $('#rack-tags-toggle-btn'); if(!btn) return;
+  const activeN = FILT.tags.length + (FILT.term ? 1 : 0);
+  let badge = btn.querySelector('.rk-tag-count');
+  if(activeN){
+    if(!badge){ badge = document.createElement('span'); badge.className = 'rk-tag-count'; btn.querySelector('.en').after(badge); }
+    badge.textContent = activeN;
+  } else if(badge) badge.remove();
 }
 function rkTagMatches(g, t){
   return t.indexOf('aroma:')===0 ? AROMA_CACHE[g.id].clusterIds.includes(t.slice(6)) : (g.tags||[]).includes(t);
@@ -389,6 +419,68 @@ function filtTermMatches(g){
   if(!FILT.term) return true;
   const cache = AROMA_CACHE[g.id];
   return cache.keywordIds.includes(FILT.term) || cache.other.some(o => o.toLowerCase()===FILT.term);
+}
+// Which grapes currently pass ALL of FILT (cat + tags + search + word-level term) — used to dim/
+// highlight the quadrant map. null means "nothing active", so the chart draws at normal opacity.
+function activeFilterSet(){
+  if(!FILT.tags.length && FILT.cat==='ALL' && !FILT.q.trim() && !FILT.term) return null;
+  const q = FILT.q.trim().toLowerCase();
+  const ids = new Set();
+  GRAPES.forEach(g => {
+    if(FILT.cat!=='ALL' && g.catCode!==FILT.cat) return;
+    if(q && !g.hay.includes(q)) return;
+    if(FILT.tags.length && !FILT.tags.every(t => rkTagMatches(g, t))) return;
+    if(!filtTermMatches(g)) return;
+    ids.add(g.id);
+  });
+  return ids;
+}
+// The quadrant map section is now shared between The Racks and the Aroma Map page (same markup,
+// same IDs — only one is ever in the DOM at a time since each page fully replaces #page).
+function rkQuadSectionHTML(){
+  return '<div class="cp-container"><div class="rk-quad" id="rack-quad">' +
+    '<button type="button" class="rk-quad-head" id="rack-quad-toggle-btn" aria-expanded="true"><span class="zh">品種象限圖</span> <span class="en">Variety Quadrant Map</span>' +
+      '<svg class="rk-quad-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>' +
+    '<div class="rk-quad-body" id="rack-quad-body">' +
+      '<div class="rk-quad-toggle" id="rack-quad-metric"><span class="rk-quad-toggle-label">縱軸 Y axis:</span>' +
+        Object.keys(QUAD_METRICS).map(k => '<button class="rk-quadbtn'+(RS.quadMetric===k?' active':'')+'" data-metric="'+k+'" type="button">'+esc(QUAD_METRICS[k].zh)+' '+esc(QUAD_METRICS[k].en)+'</button>').join('') +
+        '<button class="rk-quadbtn rk-quad-label-btn'+(RS.quadLabels?' active':'')+'" id="rack-quad-label-btn" type="button">標籤 Labels '+(RS.quadLabels?'開 On':'關 Off')+'</button>' +
+      '</div>' +
+      '<div class="rk-quad-chart" id="rack-quad-chart"></div>' +
+      '<div class="rk-quad-legend" id="rack-quad-legend"></div>' +
+      '<div class="rk-quad-hint">每個點直接標出品種名與主要產區（點太多太擠時可關掉標籤）。滑過點可看完整資訊（含香氣分類）；點一個點 → 打開那支品種的頁面。上面的標籤列（含香氣篩選）選了之後，符合的點會亮起、其餘的點會變淡。Each dot shows its variety, key region, and top aroma clusters on hover. Pick tags above (including aroma) to light up matching dots and dim the rest.</div>' +
+    '</div>' +
+  '</div></div>';
+}
+function drawQuad(){
+  $('#rack-quad-chart').innerHTML = rkQuadSVG(RS.quadMetric, RS.quadLabels, activeFilterSet());
+  $('#rack-quad-legend').innerHTML = rkQuadLegendHTML();
+}
+// Binds the quadrant section's own controls (Y-axis metric, label toggle, collapse, click-to-open).
+// Call once per page render, after rkQuadSectionHTML() is in the DOM.
+function bindQuadSection(){
+  $('#rack-quad-metric').addEventListener('click', e => {
+    const labelBtn = e.target.closest('#rack-quad-label-btn');
+    if(labelBtn){
+      RS.quadLabels = !RS.quadLabels;
+      labelBtn.classList.toggle('active', RS.quadLabels);
+      labelBtn.textContent = '標籤 Labels ' + (RS.quadLabels ? '開 On' : '關 Off');
+      drawQuad();
+      return;
+    }
+    const b = e.target.closest('.rk-quadbtn'); if(!b || b.id==='rack-quad-label-btn') return;
+    $$('#rack-quad-metric .rk-quadbtn').forEach(x => { if(x.id!=='rack-quad-label-btn') x.classList.remove('active'); });
+    b.classList.add('active'); RS.quadMetric = b.dataset.metric; drawQuad();
+  });
+  $('#rack-quad-chart').addEventListener('click', e => {
+    const dot = e.target.closest('.rk-quad-dot'); if(!dot) return;
+    location.hash = '#/racks/' + dot.dataset.id;
+  });
+  $('#rack-quad-toggle-btn').addEventListener('click', () => {
+    const btn = $('#rack-quad-toggle-btn'); const expanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!expanded)); $('#rack-quad-body').hidden = expanded;
+  });
+  drawQuad();
 }
 function rkQuadLabel(g){
   // short "plot/region" proxy: first key growing region, trimmed of parenthetical detail
@@ -459,63 +551,10 @@ function pageRacks(){
     '<div class="chip-row" id="rack-cats">' + ['ALL'].concat(CAT_ORDER).map(c => '<button class="chip'+(FILT.cat===c?' active':'')+'" data-cat="'+c+'" type="button">'+(c==='ALL'?'全部 All':'<span class="sw"></span>'+CATS[c].n+' '+CATS[c].zh)+'</button>').join('') + '</div>' +
     '<div class="seg" id="rack-view"><button type="button" data-v="rack" class="'+(RS.view==='rack'?'on':'')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3h2v4l2 3v11H7V10l2-3zM15 3h2v4l2 3v11h-6"/></svg>Rack</button><button type="button" data-v="list" class="'+(RS.view==='list'?'on':'')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>List</button></div>' +
   '</div><div class="cp-container">' + rkTagRowHTML() + '</div></div>' +
-  '<div class="cp-container"><div class="rk-quad" id="rack-quad">' +
-    '<button type="button" class="rk-quad-head" id="rack-quad-toggle-btn" aria-expanded="true"><span class="zh">品種象限圖</span> <span class="en">Variety Quadrant Map</span>' +
-      '<svg class="rk-quad-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>' +
-    '<div class="rk-quad-body" id="rack-quad-body">' +
-      '<div class="rk-quad-toggle" id="rack-quad-metric"><span class="rk-quad-toggle-label">縱軸 Y axis:</span>' +
-        Object.keys(QUAD_METRICS).map(k => '<button class="rk-quadbtn'+(RS.quadMetric===k?' active':'')+'" data-metric="'+k+'" type="button">'+esc(QUAD_METRICS[k].zh)+' '+esc(QUAD_METRICS[k].en)+'</button>').join('') +
-        '<button class="rk-quadbtn rk-quad-label-btn'+(RS.quadLabels?' active':'')+'" id="rack-quad-label-btn" type="button">標籤 Labels '+(RS.quadLabels?'開 On':'關 Off')+'</button>' +
-      '</div>' +
-      '<div class="rk-quad-chart" id="rack-quad-chart"></div>' +
-      '<div class="rk-quad-legend" id="rack-quad-legend"></div>' +
-      '<div class="rk-quad-hint">每個點直接標出品種名與主要產區（點太多太擠時可關掉標籤）。滑過點可看完整資訊（含香氣分類）；點一個點 → 打開那支品種的頁面。上面的標籤列（含香氣篩選）選了之後，符合的點會亮起、其餘的點會變淡 — 跟 Aroma Map 共用同一套香氣分類。Each dot shows its variety, key region, and top aroma clusters on hover. Pick tags above (including aroma) to light up matching dots and dim the rest — the same classification used on the Aroma Map page.</div>' +
-    '</div>' +
-  '</div></div>' +
   '<div class="cp-container" id="rack-body"></div>';
   const body = $('#rack-body');
 
-  function activeFilterSet(){
-    if(!FILT.tags.length && FILT.cat==='ALL' && !FILT.q.trim() && !FILT.term) return null; // nothing active → show the full map at normal opacity
-    const q = FILT.q.trim().toLowerCase();
-    const ids = new Set();
-    GRAPES.forEach(g => {
-      if(FILT.cat!=='ALL' && g.catCode!==FILT.cat) return;
-      if(q && !g.hay.includes(q)) return;
-      if(FILT.tags.length && !FILT.tags.every(t => rkTagMatches(g, t))) return;
-      if(!filtTermMatches(g)) return;
-      ids.add(g.id);
-    });
-    return ids;
-  }
-  function drawQuad(){
-    $('#rack-quad-chart').innerHTML = rkQuadSVG(RS.quadMetric, RS.quadLabels, activeFilterSet());
-    $('#rack-quad-legend').innerHTML = rkQuadLegendHTML();
-  }
-  function drawAll(){ draw(); drawQuad(); }
-  $('#rack-quad-metric').addEventListener('click', e => {
-    const labelBtn = e.target.closest('#rack-quad-label-btn');
-    if(labelBtn){
-      RS.quadLabels = !RS.quadLabels;
-      labelBtn.classList.toggle('active', RS.quadLabels);
-      labelBtn.textContent = '標籤 Labels ' + (RS.quadLabels ? '開 On' : '關 Off');
-      drawQuad();
-      return;
-    }
-    const b = e.target.closest('.rk-quadbtn'); if(!b || b.id==='rack-quad-label-btn') return;
-    $$('#rack-quad-metric .rk-quadbtn').forEach(x => { if(x.id!=='rack-quad-label-btn') x.classList.remove('active'); });
-    b.classList.add('active'); RS.quadMetric = b.dataset.metric; drawQuad();
-  });
-  $('#rack-quad-chart').addEventListener('click', e => {
-    const dot = e.target.closest('.rk-quad-dot'); if(!dot) return;
-    location.hash = '#/racks/' + dot.dataset.id;
-  });
-  $('#rack-quad-toggle-btn').addEventListener('click', () => {
-    const btn = $('#rack-quad-toggle-btn'); const expanded = btn.getAttribute('aria-expanded') === 'true';
-    btn.setAttribute('aria-expanded', String(!expanded)); $('#rack-quad-body').hidden = expanded;
-  });
-  drawQuad();
-  bindTagRow(drawAll);
+  bindTagRow(draw);
 
   function draw(){
     const q = FILT.q.toLowerCase();
@@ -533,8 +572,8 @@ function pageRacks(){
       return '<section class="rack" style="--rack-c:var(--cat-'+c.toLowerCase()+')"><div class="rack-head"><span class="rn">'+CATS[c].n+'</span><h3>'+CATS[c].en+'<small>'+CATS[c].zh+'葡萄品種</small></h3><span class="cnt">'+items.length+' bottles</span></div><div class="shelf">'+items.map(slotHTML).join('')+'</div></section>';
     }).join('') + '<div style="height:90px"></div>';
   }
-  $('#rack-q').addEventListener('input', e => { FILT.q = e.target.value.trim(); draw(); drawQuad(); });
-  $('#rack-cats').addEventListener('click', e => { const b = e.target.closest('.chip'); if(!b) return; FILT.cat = b.dataset.cat; $$('#rack-cats .chip').forEach(x => x.classList.toggle('active', x===b)); draw(); drawQuad(); });
+  $('#rack-q').addEventListener('input', e => { FILT.q = e.target.value.trim(); draw(); });
+  $('#rack-cats').addEventListener('click', e => { const b = e.target.closest('.chip'); if(!b) return; FILT.cat = b.dataset.cat; $$('#rack-cats .chip').forEach(x => x.classList.toggle('active', x===b)); draw(); });
   $('#rack-view').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; RS.view = b.dataset.v; S.prefs.rackView = RS.view; save(); $$('#rack-view button').forEach(x => x.classList.toggle('on', x===b)); draw(); });
   draw();
 }
@@ -581,7 +620,9 @@ function pageAroma(presetId){
   '<div class="cp-container"><div class="arm-wrap">' +
     '<div class="arm-list" id="arm-list"></div>' +
     '<div class="arm-detail" id="arm-detail"></div>' +
-  '</div></div><div style="height:90px"></div>';
+  '</div></div>' +
+  rkQuadSectionHTML() +
+  '<div style="height:90px"></div>';
 
   function draw(){
     const list = GRAPES.filter(aromaGrapeMatches);
@@ -590,6 +631,7 @@ function pageAroma(presetId){
     $('#arm-list').innerHTML = (list.length ? list.map(g => '<button type="button" class="arm-row'+(g.id===ARS.selectedId?' on':'')+'" data-id="'+g.id+'"><span class="dot" style="background:var(--cat-'+g.catCode.toLowerCase()+')"></span><span class="nm">'+esc(g.main)+'</span><span class="rk">'+CATS[g.catCode].n+'·'+pad(g.no)+'</span></button>').join('')
       : '<p class="arm-none" style="padding:14px">沒有符合篩選條件的品種。No varieties match these filters.</p>');
     $('#arm-detail').innerHTML = aromaDetailHTML(byId(ARS.selectedId));
+    drawQuad();
   }
   $('#arm-q').addEventListener('input', e => { FILT.q = e.target.value.trim(); draw(); });
   $('#arm-cats').addEventListener('click', e => { const b = e.target.closest('.chip'); if(!b) return; FILT.cat = b.dataset.cat; $$('#arm-cats .chip').forEach(x => x.classList.toggle('active', x===b)); draw(); });
@@ -603,6 +645,7 @@ function pageAroma(presetId){
     $('#rack-tags').outerHTML = rkTagRowHTML(); bindTagRow(draw);
     draw();
   });
+  bindQuadSection();
   draw();
 }
 

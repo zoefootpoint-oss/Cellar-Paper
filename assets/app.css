@@ -540,6 +540,11 @@ body[data-lang="en"] .lq-en{ font-size:1em; color:var(--ink); margin-top:0; }
 .see-also .slot, .kept-shelf .slot{ height:auto; padding-bottom:14px; border-bottom:3px solid var(--wood); }
 
 /* ---- Rack filters & Variety Quadrant Map (The Racks) ---- */
+/* Collapsible card — closed by default so the (fairly tall) tag list doesn't push the shelf/list
+   down the page; re-uses the same head/chev/body expand language as .rk-quad below. */
+.rk-tag-panel{ border:1px solid var(--line); border-radius:var(--r-card); margin:4px 0 14px; overflow:hidden; background:var(--surface); }
+.rk-tag-head .en{ font-size:12px; font-style:italic; color:var(--ink-faint); font-family:var(--font-body); }
+.rk-tag-count{ font-size:10.5px; font-weight:700; background:var(--accent); color:#fff; border-radius:var(--r-pill); padding:1px 8px; line-height:1.5; }
 .rk-tag-row{ display:flex; flex-wrap:wrap; gap:10px 20px; padding:4px 0 2px; }
 .rk-tag-group{ display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
 .rk-tag-group-label{ font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-faint); margin-right:2px; }
