@@ -553,6 +553,11 @@ body[data-lang="en"] .lq-en{ font-size:1em; color:var(--ink); margin-top:0; }
 .rk-tagbtn.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
 .rk-reset-btn{ font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; padding:7px 13px; border-radius:var(--r-pill); border:1px dashed var(--ink-faint); background:transparent; color:var(--ink-dim); cursor:pointer; }
 .rk-reset-btn:hover{ border-color:var(--ink); color:var(--ink); }
+.rk-tag-divider{ flex-basis:100%; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); padding-top:6px; margin-top:2px; border-top:1px dashed var(--line); }
+.rk-tag-divider small{ display:block; font-size:9.5px; text-transform:none; letter-spacing:0; font-style:italic; margin-top:2px; }
+.rk-tagbtn-aroma{ border-color:color-mix(in srgb, var(--c) 45%, var(--line)); color:var(--c); }
+.rk-tagbtn-aroma:hover{ border-color:var(--c); }
+.rk-tagbtn-aroma.active{ background:var(--c); border-color:var(--c); color:#fff; }
 
 .rk-quad{ border:1px solid var(--line); border-radius:var(--r-card); margin:18px 0 8px; overflow:hidden; background:var(--surface); }
 .rk-quad-head{ width:100%; display:flex; align-items:center; gap:10px; padding:14px 18px; background:none; border:none; cursor:pointer; text-align:left; font-family:var(--font-display); }
@@ -569,8 +574,9 @@ body[data-lang="en"] .lq-en{ font-size:1em; color:var(--ink); margin-top:0; }
 .rk-quadbtn.active{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
 .rk-quad-chart{ width:100%; overflow-x:auto; }
 .rk-quad-chart svg{ width:100%; height:auto; display:block; }
-.rk-quad-dot{ cursor:pointer; }
+.rk-quad-dot{ cursor:pointer; transition:opacity .25s var(--ease); }
 .rk-quad-dot:hover{ stroke-width:2.6; }
+.rk-quad-dot.is-hit{ filter:drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 70%, transparent)); }
 .rk-quad-axis-label{ font-size:11px; fill:var(--ink-dim); font-family:var(--font-body); }
 .rk-quad-grid-line{ stroke:var(--line); stroke-width:1; }
 .rk-quad-axis-line{ stroke:var(--ink-faint); stroke-width:1.4; }
@@ -606,9 +612,13 @@ body[data-lang="en"] .lq-en{ font-size:1em; color:var(--ink); margin-top:0; }
 .arm-row.on{ background:var(--accent); color:var(--accent-ink); }
 .arm-row.on .rk{ color:var(--accent-ink); opacity:.8; }
 .arm-detail{ padding:22px 24px; }
-.arm-detail-head{ display:flex; align-items:center; gap:10px; margin-bottom:16px; }
-.arm-detail-head .dot{ width:10px; height:10px; border-radius:50%; flex:none; }
-.arm-detail-head h3{ font-family:var(--font-display); font-size:22px; margin:0; flex:1; }
+.arm-detail-head{ display:flex; align-items:flex-start; gap:10px; margin-bottom:16px; }
+.arm-detail-head .dot{ width:10px; height:10px; border-radius:50%; flex:none; margin-top:9px; }
+.arm-detail-head > div{ flex:1; min-width:0; }
+.arm-detail-head h3{ font-family:var(--font-display); font-size:22px; margin:0; }
+.arm-region{ font-size:11.5px; color:var(--ink-faint); margin:3px 0 0; }
+.arm-region b{ color:var(--ink-dim); font-weight:600; }
+.arm-detail-head > .xlink{ margin-top:4px; flex:none; white-space:nowrap; }
 .arm-empty, .arm-none{ color:var(--ink-faint); font-size:13px; padding:30px 6px; }
 .arm-cols{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
 .arm-col h4{ font-family:var(--font-display); font-size:14px; margin:0 0 10px; padding-bottom:8px; border-bottom:1px solid var(--line); }
@@ -617,8 +627,20 @@ body[data-lang="en"] .lq-en{ font-size:1em; color:var(--ink); margin-top:0; }
 .arm-cluster b{ display:block; font-size:11px; font-weight:600; color:var(--c); margin-bottom:5px; }
 .arm-cluster b .en{ font-weight:400; font-style:italic; opacity:.8; }
 .arm-terms{ display:flex; flex-wrap:wrap; gap:5px; }
-.arm-term{ font-size:11px; padding:4px 9px; border-radius:var(--r-pill); background:color-mix(in srgb, var(--c) 14%, var(--paper)); border:1px solid color-mix(in srgb, var(--c) 35%, var(--line)); color:var(--ink); }
+.arm-term{ font:inherit; font-size:11px; padding:4px 9px; border-radius:var(--r-pill); background:color-mix(in srgb, var(--c) 14%, var(--paper)); border:1px solid color-mix(in srgb, var(--c) 35%, var(--line)); color:var(--ink); cursor:pointer; }
+.arm-term:hover{ border-color:var(--c); background:color-mix(in srgb, var(--c) 24%, var(--paper)); }
+.arm-term.active{ background:var(--c); border-color:var(--c); color:#fff; }
 .arm-term-other{ background:var(--paper); border-color:var(--line); color:var(--ink-faint); }
+.arm-term-other:hover{ border-color:var(--ink-faint); background:var(--surface); }
+.arm-term-other.active{ background:var(--ink); border-color:var(--ink); color:var(--paper); }
+.arm-term-hint{ font-size:10.5px; color:var(--ink-faint); margin:0 0 14px; }
+.arm-term-banner{ display:flex; align-items:center; gap:8px; font-size:11px; color:var(--ink-dim); padding:10px 14px; background:var(--paper); border-bottom:1px solid var(--line); }
+.arm-term-banner b{ color:var(--accent); }
+.arm-term-banner button{ margin-left:auto; font-size:10px; letter-spacing:.06em; border:1px dashed var(--ink-faint); border-radius:var(--r-pill); padding:3px 9px; background:none; color:var(--ink-dim); cursor:pointer; }
+.arm-term-banner button:hover{ border-color:var(--ink); color:var(--ink); }
+/* when the term banner sits inside the shared tag row (.rk-tag-row), make it its own full-width
+   line with a rounded pill look instead of the list-header style above */
+.rk-tag-row .arm-term-banner{ flex-basis:100%; border:1px solid var(--line); border-radius:var(--r-pill); margin-top:4px; }
 .arm-other{ margin-top:18px; padding-top:14px; border-top:1px dashed var(--line); }
 .arm-other-label{ display:block; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:8px; }
 @media (max-width:860px){ .arm-wrap{ grid-template-columns:1fr; } .arm-list{ border-right:none; border-bottom:1px solid var(--line); max-height:260px; } .arm-cols{ grid-template-columns:1fr; } .arm-legend-label{ min-width:0; width:100%; margin-bottom:2px; } }
