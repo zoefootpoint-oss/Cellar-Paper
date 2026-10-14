@@ -271,11 +271,11 @@ function rkQuadLabel(g){
 }
 function rkQuadSVG(metric, showLabels){
   const m = QUAD_METRICS[metric];
-  const W = 1180, H = 720, L = 70, R = 24, T = 18, B = 56;
+  const W = 1180, H = 960, L = 70, R = 24, T = 18, B = 56;
   const PW = W - L - R, PH = H - T - B, yMax = 3;
   function hash(n, salt){ const x = Math.sin(n * 12.9898 + salt * 78.233) * 43758.5453; return x - Math.floor(x); }
-  function px(xVal, seed){ const jx = (hash(seed,1)-0.5)*0.6; const v = Math.max(1, Math.min(4, xVal+jx)); return L + (v-1)/3*PW; }
-  function py(yVal, seed){ const jy = (hash(seed,2)-0.5)*0.6; const v = Math.max(1, Math.min(yMax, yVal+jy)); return T + PH - (v-1)/(yMax-1)*PH; }
+  function px(xVal, seed){ const jx = (hash(seed,1)-0.5)*0.8; const v = Math.max(1, Math.min(4, xVal+jx)); return L + (v-1)/3*PW; }
+  function py(yVal, seed){ const jy = (hash(seed,2)-0.5)*0.8; const v = Math.max(1, Math.min(yMax, yVal+jy)); return T + PH - (v-1)/(yMax-1)*PH; }
   let gridLines = '';
   for(let gx=1; gx<=4; gx++){ const x = L+(gx-1)/3*PW; gridLines += '<line class="rk-quad-grid-line" x1="'+x+'" y1="'+T+'" x2="'+x+'" y2="'+(T+PH)+'"/>'; }
   for(let gy=1; gy<=3; gy++){ const y = T+PH-(gy-1)/2*PH; gridLines += '<line class="rk-quad-grid-line" x1="'+L+'" y1="'+y+'" x2="'+(L+PW)+'" y2="'+y+'"/>'; }
@@ -291,9 +291,9 @@ function rkQuadSVG(metric, showLabels){
     if(showLabels){
       const lab = rkQuadLabel(g);
       const flip = cx > L + PW * 0.8; // near the right edge: anchor the label to the left of the dot instead of clipping off-canvas
-      const lx = flip ? cx - 7 : cx + 7, ly = cy + 3;
+      const lx = flip ? cx - 10 : cx + 10, ly = cy - 5;
       const anchor = flip ? ' text-anchor="end"' : '';
-      labels.push('<text class="rk-quad-dot-label" data-id="'+g.id+'" x="'+lx.toFixed(1)+'" y="'+ly.toFixed(1)+'"'+anchor+'>'+esc(lab.name)+(lab.region ? '<tspan class="rk-quad-dot-label-sub" dx="4">'+esc(lab.region)+'</tspan>' : '')+'</text>');
+      labels.push('<text class="rk-quad-dot-label" data-id="'+g.id+'" x="'+lx.toFixed(1)+'" y="'+ly.toFixed(1)+'"'+anchor+'><tspan x="'+lx.toFixed(1)+'" dy="0">'+esc(lab.name)+'</tspan>'+(lab.region ? '<tspan class="rk-quad-dot-label-sub" x="'+lx.toFixed(1)+'" dy="12">'+esc(lab.region)+'</tspan>' : '')+'</text>');
     }
   });
   return '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">' + gridLines +
